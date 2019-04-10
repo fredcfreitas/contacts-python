@@ -9,8 +9,8 @@
 # on your machine. This is a straightforward script  #
 # you can modify in any way you see fit. You must    #
 # observe GNU license to use it.                     #
-# Written by Paul Whitford.                          #
-# Debugged by Ronaldo Oliveira, 15/05/10             #
+# Written by Paul Whitford, 11/02/2009.              #
+# Debugged by Ronaldo Oliveira, 05/15/10             #
 # Translated to python by Frederico Campos Freitas   #
 ######################################################
 
@@ -33,7 +33,9 @@ import subprocess
 
 CUTOFF = 1.2
 SKIPFRAMES = 1 #1 means no skkiped frames. 2 will skip each 1 frame and so on.
-DDT = 10  #time increment to generate temporary pdb files
+t0 = 99984  #initial time to extract trajectory
+ttf = 100100 #1E20 #final time to extract trajectory
+DDT = 10000 #10000  #time increment to generate temporary pdb files
 GROMACSpath = '' #gromacs executable path files
 
 
@@ -45,8 +47,9 @@ GROMACSpath = '' #gromacs executable path files
 def ConvertReadable(gmxpath,filetpr,filextc,frameskip,Ti,Tf):
 
 	runtrjconv = "echo 0 | " + gmxpath + "trjconv -b " + str(Ti) + " -e " + str(Tf) + " -nice 0 -skip " + str(frameskip) + " -s " + filetpr + " -o teste-" + str(Ti) + ".pdb -f " + filextc + " " #bash command to be runned
-   	subprocess.check_output(['bash','-c', runtrjconv]) # run trjconv to every timestep
-   	return
+	print runtrjconv
+	tstatus = subprocess.check_output(['bash','-c', runtrjconv]) # run trjconv to every timestep
+	return tstatus
 ##################################################################################################
 
 ##################################################################################################
@@ -58,6 +61,24 @@ def DeleteTemporary(Ti):
 	deletetemp = "rm teste-" + str(Ti) + ".pdb" #bash command to be runned
    	subprocess.check_output(['bash','-c', deletetemp]) # run trjconv to every timestep
    	return
+##################################################################################################
+
+
+##################################################################################################
+# Function to calculate the contacts
+#
+##################################################################################################
+def DoContacts(fcref,ttraj,weigthfile):
+	Q = 0
+	Qopt = 0
+	for a in range(len(fcref)):
+		Ci = int(fcref.item((a,0))-1) #correction due indexation of python
+		Cj = int(fcref.item((a,1))-1) #correction due indexation of python
+		Rij = np.sqrt((((ttraj.item(Ci,0))-((ttraj.item(Cj,0))))**2)+(((ttraj.item(Ci,1))-((ttraj.item(Cj,1))))**2)+(((ttraj.item(Ci,2))-((ttraj.item(Cj,2))))**2))
+		if Rij <= fcref.item((a,2)) * CUTOFF:
+			Q = Q+1 #usual contact calculation
+			Qopt = Qopt+1*weigthfile[a] #calculating Optimized contacts
+	return Q,Qopt
 ##################################################################################################
 
 def main():
@@ -72,9 +93,9 @@ def main():
 		sys.exit()
 	try:
 		#txtc = np.genfromtxt(TOPOLTPR, dtype=float) #get values of TOPOLTPR from numerical array.
-		#ttpr = np.genfromtxt(TRAJXTC, skip_header=3, skip_footer=2, dtype=float, usecols=(5,6,7))
+		#ttraj = np.genfromtxt(TRAJXTC, skip_header=3, skip_footer=2, dtype=float, usecols=(5,6,7))
 		tcontfile = np.genfromtxt(CONTFILE, dtype=float)
-		weigthfile = np.genfromtxt(WEIGHT, dtype=float)
+		Aweigthfile = np.genfromtxt(WEIGHT, dtype=float)
 	except (IOError) as errno:
 		print ('I/O error. %s' % errno)
 		sys.exit()
@@ -82,64 +103,72 @@ def main():
 
 
 	Rfcref = ((np.sqrt((6.0/5.0)*((tcontfile[:,4])/(tcontfile[:,3]))))*10)[np.newaxis, :].T # Distance between two contacts from file.cont
-	fcref = np.concatenate((tcontfile[:,[0,1]], Rfcref), axis=1) #create array with Iaa and Jaa indices and Raa from file.cont
-	#np.savetxt('fcref',fcref)
-	#np.savetxt('Rfcref',Rfcref)
-	Q = 0.0
-	Qopt = 0.0
+	Afcref = np.concatenate((tcontfile[:,[0,1]], Rfcref), axis=1) #create array with Iaa and Jaa indices and Raa from file.cont
 
 	contacts = []
 	optcontacts = []
 
-	to = 0 #initial time to extract trajectory
-	ttf = 100 #final time to extract trajectory
-	te = DDT
+	to = t0
+	te = t0 + DDT
+
+	utimes = [] #timesteps already read in simulation
+	setimes = ''
+	X = []
+	Y = []
+	Z = []
+
 	while (to < ttf):
-		ConvertReadable(GROMACSpath,TOPOLTPR,TRAJXTC,SKIPFRAMES,to,te)
-		#analysis function
+		try:
+			ttstatus = ConvertReadable(GROMACSpath,TOPOLTPR,TRAJXTC,SKIPFRAMES,to,te)
+			print 'Olhe'
+			print ttstatus
+		except (IOError) as errnoa:
+			print ('I/O error. %s' % errnoa)
+			sys.exit()
+		except ValueError:
+			print 'Value'
+			#ConvertReadable(GROMACSpath,TOPOLTPR,TRAJXTC,SKIPFRAMES,to=to-1.5*DDT,te='')
+		except:
+			print 'Undefined'
+			print ttstatus
+			#teste = ttstatus[110][0]
+			to=to-2*DDT
+			te = -1 #last frame to read from trajectory
+			ttstatus = ConvertReadable(GROMACSpath,TOPOLTPR,TRAJXTC,SKIPFRAMES,to,te)
+		try:
+			postemp = open('teste-' + str(to) + '.pdb', 'r') #open temporary Translated trajectory file
+			tempfile = postemp.readlines() #split it in a list of lines
+		except (IOError) as errnoa:
+			print ('Ehhh I/O error. %s' % errnoa)
+			sys.exit()
+
+		for line in tempfile:
+			if 't=' in line:
+				setimes = float(line[26:1000])
+				#print setimes
+			if setimes not in utimes:
+				repos = True
+				if ('ATOM' in line) and (repos):
+					X.append(float(line[30:37]))
+					Y.append(float(line[38:45]))
+					Z.append(float(line[46:53]))
+				elif 'TER' in line:
+					utimes.append(setimes)
+					Attraj = np.transpose(np.array([X,Y,Z])) #reconstruced array with positions of all atoms in each time
+					Q,Qopt = DoContacts(Afcref,Attraj,Aweigthfile)
+					contacts.append([Q]) #inside time "for loop"
+					optcontacts.append([Qopt]) #inside time "for loop"
+					#print Attraj
+					#np.savetxt('setimes' + str(setimes) +'.dat',Attraj)
+					X = [] #position vector of each time
+					Y = []
+					Z = []
+					repos = False
 		DeleteTemporary(to)
 		to = to + DDT
 		te = te + DDT
+		np.savetxt('contacts.dat',contacts)
+		np.savetxt('opt-contacts.dat',optcontacts)
 
-
-
-	#for t in totaltime:
-	# for a in range(len(fcref)):
-	# 	Ci = int(fcref.item((a,0))-1) #correction due indexation of python
-	# 	Cj = int(fcref.item((a,1))-1) #correction due indexation of python
-	# 	Rij = np.sqrt((((ttpr.item(Ci,0))-((ttpr.item(Cj,0))))**2)+(((ttpr.item(Ci,1))-((ttpr.item(Cj,1))))**2)+(((ttpr.item(Ci,2))-((ttpr.item(Cj,2))))**2))
-	# 	if Rij <= fcref.item((a,2)) * CUTOFF:
-	# 		Q = Q+1 #usual contact calculation
-	# 		Qopt = Qopt+1*weigthfile[a] #calculating Optimized contacts
-	#contacts.append([Q]) #inside time "for loop"
-	#optcontacts.append([Qopt]) #inside time "for loop"
-
-	#print Q
-	#print Qopt
-
-	#np.savetxt('contacts.dat',contacts)
-	#np.savetxt('opt-contacts.dat',optcontacts)
-
-	#teste-"Tf".pdb #file to be deleted
-
-
-
-	#print ttpr
-	#print txtc
-	#g = ttpr.item((7, 4	)) #get the item aij with 0 in the begining
-	#print 'A variavel 8,5 do arquivo file.cont e ' + str(g) + '.'
-
-
-#	runtrjconv = "echo 0 | trjconv -b 0.3 -e 0.5 -nice 0 -skip 1 -s run.0.tpr -o teste-.pdb -f run.0.xtc" #bash command to be runned
-#	output = subprocess.check_output(['bash','-c', runtrjconv]) #bash command being runned
-#	lines = ttpr.readlines() #to split ttpr in lines
-#Qmax = np.int(np.max(Q))
-	#Q = np.asarray([float(line.rstrip()) for line in islice(ttpr, CONNUMaa, None)])
-#	print lines[100] #show 100th line
-#	linhas = []
-#	for item in lines:
-#		linhas.append(float(lines))
-#	linhas = np.array(lines) + 0.
-#	print linhas[100]
 
 if __name__ == "__main__": main()
