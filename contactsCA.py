@@ -24,18 +24,21 @@
 
 import sys
 import numpy as np
-import scipy as sc
+#import scipy as sc
 #import progressbar
 #from time import sleep
-from itertools import islice
-from scipy import stats
+#from itertools import islice
+#from scipy import stats
 import subprocess
+import multiprocessing
+from functools import partial
+
 
 CUTOFF = 1.2
 SKIPFRAMES = 1 #1 means no skkiped frames. 2 will skip each 1 frame and so on.
-t0 = 99984  #initial time to extract trajectory
-ttf = 100100 #1E20 #final time to extract trajectory
-DDT = 10000 #10000  #time increment to generate temporary pdb files
+t0 = 0 #initial time to extract trajectory
+ttf = 1E20 #final time to extract trajectory
+DDT = 10000  #time increment to generate temporary pdb files
 GROMACSpath = '' #gromacs executable path files
 
 
@@ -47,7 +50,6 @@ GROMACSpath = '' #gromacs executable path files
 def ConvertReadable(gmxpath,filetpr,filextc,frameskip,Ti,Tf):
 
 	runtrjconv = "echo 0 | " + gmxpath + "trjconv -b " + str(Ti) + " -e " + str(Tf) + " -nice 0 -skip " + str(frameskip) + " -s " + filetpr + " -o teste-" + str(Ti) + ".pdb -f " + filextc + " " #bash command to be runned
-	print runtrjconv
 	tstatus = subprocess.check_output(['bash','-c', runtrjconv]) # run trjconv to every timestep
 	return tstatus
 ##################################################################################################
@@ -65,40 +67,67 @@ def DeleteTemporary(Ti):
 
 
 ##################################################################################################
+# Function to call contacts calculation and parallelize it
+#
+##################################################################################################
+def CallDoContacts(cfcref,cttraj,cweigthfile,ca):
+	numcores = (multiprocessing.cpu_count())
+	pool = multiprocessing.Pool(processes=numcores)
+	C1Contacts = partial(DoContacts, cfcref)
+	C2Contacts = partial(C1Contacts, cttraj)
+	C3Contacts = partial(C2Contacts, cweigthfile)
+	Qvec = pool.map(C3Contacts, ca)
+	pool.close()
+	pool.join()
+	return Qvec
+#
+##################################################################################################
+
+##################################################################################################
 # Function to calculate the contacts
 #
 ##################################################################################################
-def DoContacts(fcref,ttraj,weigthfile):
-	Q = 0
-	Qopt = 0
-	for a in range(len(fcref)):
-		Ci = int(fcref.item((a,0))-1) #correction due indexation of python
-		Cj = int(fcref.item((a,1))-1) #correction due indexation of python
-		Rij = np.sqrt((((ttraj.item(Ci,0))-((ttraj.item(Cj,0))))**2)+(((ttraj.item(Ci,1))-((ttraj.item(Cj,1))))**2)+(((ttraj.item(Ci,2))-((ttraj.item(Cj,2))))**2))
-		if Rij <= fcref.item((a,2)) * CUTOFF:
-			Q = Q+1 #usual contact calculation
-			Qopt = Qopt+1*weigthfile[a] #calculating Optimized contacts
-	return Q,Qopt
+
+def DoContacts(fcref,ttraj,weigthfile,a):
+	QQ = 0
+	QQopt = 0
+	Ci = int(fcref.item((a,0))-1) #correction due indexation of python
+	Cj = int(fcref.item((a,1))-1) #correction due indexation of python
+	Rij = np.sqrt((((ttraj.item(Ci,0))-((ttraj.item(Cj,0))))**2)+(((ttraj.item(Ci,1))-((ttraj.item(Cj,1))))**2)+(((ttraj.item(Ci,2))-((ttraj.item(Cj,2))))**2))
+	if Rij <= fcref.item((a,2)) * CUTOFF:
+		QQ = 1 #usual contact calculation
+		QQopt = 1*weigthfile[a] #calculating Optimized contacts
+	return QQ,QQopt
+#
 ##################################################################################################
+
 
 def main():
 
-	if len(sys.argv) > 2: ## To open just if exist  file in argument
+	if len(sys.argv) > 4: ## To open just if exist  file in argument
 		TOPOLTPR = sys.argv[1]
 		TRAJXTC = sys.argv[2]
 		CONTFILE = sys.argv[3]
 		WEIGHT = sys.argv[4]
+	elif (len(sys.argv) == 4):
+		TOPOLTPR = sys.argv[1]
+		TRAJXTC = sys.argv[2]
+		CONTFILE = sys.argv[3]
 	else:
-		print ('One (or more) input file(s) is(are) missing. Please insert files using contacts_XX.py file.TPR file.XTC file.cont')
+		print ('One (or more) input file(s) is(are) missing. Please insert files using (at least): ./contacts_XX.py file.TPR file.XTC file.cont')
 		sys.exit()
 	try:
-		#txtc = np.genfromtxt(TOPOLTPR, dtype=float) #get values of TOPOLTPR from numerical array.
-		#ttraj = np.genfromtxt(TRAJXTC, skip_header=3, skip_footer=2, dtype=float, usecols=(5,6,7))
 		tcontfile = np.genfromtxt(CONTFILE, dtype=float)
-		Aweigthfile = np.genfromtxt(WEIGHT, dtype=float)
+		if len(sys.argv) > 4:
+			Aweigthfile = np.genfromtxt(WEIGHT, dtype=float)
+		if len(sys.argv) == 4:
+			Aweigthfile = np.ones(len(tcontfile))
+			print ('Without weigth file.')
 	except (IOError) as errno:
 		print ('I/O error. %s' % errno)
 		sys.exit()
+
+
 	print 'Reading a contact file'
 
 
@@ -116,59 +145,66 @@ def main():
 	X = []
 	Y = []
 	Z = []
+	numa = 0 #variable to count number of atoms
+	flagnuma = True
 
 	while (to < ttf):
+
 		try:
-			ttstatus = ConvertReadable(GROMACSpath,TOPOLTPR,TRAJXTC,SKIPFRAMES,to,te)
-			print 'Olhe'
-			print ttstatus
+			ConvertReadable(GROMACSpath,TOPOLTPR,TRAJXTC,SKIPFRAMES,to,te)
 		except (IOError) as errnoa:
 			print ('I/O error. %s' % errnoa)
 			sys.exit()
 		except ValueError:
-			print 'Value'
-			#ConvertReadable(GROMACSpath,TOPOLTPR,TRAJXTC,SKIPFRAMES,to=to-1.5*DDT,te='')
+			print 'There is something wrong.'
 		except:
-			print 'Undefined'
-			print ttstatus
-			#teste = ttstatus[110][0]
+			print 'You made a bad choice for initial (or final) time. But there is no problem.'
 			to=to-2*DDT
 			te = -1 #last frame to read from trajectory
-			ttstatus = ConvertReadable(GROMACSpath,TOPOLTPR,TRAJXTC,SKIPFRAMES,to,te)
+			ConvertReadable(GROMACSpath,TOPOLTPR,TRAJXTC,SKIPFRAMES,to,te)
 		try:
 			postemp = open('teste-' + str(to) + '.pdb', 'r') #open temporary Translated trajectory file
 			tempfile = postemp.readlines() #split it in a list of lines
 		except (IOError) as errnoa:
-			print ('Ehhh I/O error. %s' % errnoa)
+			print ('I/O error. %s' % errnoa)
 			sys.exit()
 
 		for line in tempfile:
+
+			if to==t0: #node to calculate number of atoms
+				if ('ATOM' in line) and (flagnuma):
+					numa +=1
+				elif 'TER' in line:
+					flagnuma = False
+
 			if 't=' in line:
 				setimes = float(line[26:1000])
-				#print setimes
 			if setimes not in utimes:
-				repos = True
+				repos = True #open to read positions
 				if ('ATOM' in line) and (repos):
 					X.append(float(line[30:37]))
 					Y.append(float(line[38:45]))
 					Z.append(float(line[46:53]))
 				elif 'TER' in line:
+					repos = False #close to read positions
 					utimes.append(setimes)
 					Attraj = np.transpose(np.array([X,Y,Z])) #reconstruced array with positions of all atoms in each time
-					Q,Qopt = DoContacts(Afcref,Attraj,Aweigthfile)
+					aa = range(len(Afcref))
+					BQQopt = CallDoContacts(Afcref,Attraj,Aweigthfile,aa)
+					TQQopt = np.sum(BQQopt, axis=0)
+					Q = TQQopt[0]
+					Qopt = TQQopt[1]
 					contacts.append([Q]) #inside time "for loop"
 					optcontacts.append([Qopt]) #inside time "for loop"
-					#print Attraj
-					#np.savetxt('setimes' + str(setimes) +'.dat',Attraj)
 					X = [] #position vector of each time
 					Y = []
 					Z = []
-					repos = False
 		DeleteTemporary(to)
 		to = to + DDT
 		te = te + DDT
 		np.savetxt('contacts.dat',contacts)
 		np.savetxt('opt-contacts.dat',optcontacts)
+#	print numa #to print the number of elements analyzed.
 
 
 if __name__ == "__main__": main()
