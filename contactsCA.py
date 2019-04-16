@@ -1,18 +1,14 @@
 #!/usr/bin/python2
 #
-######################################################
-# Contacts.py is a simple scritp written to analyze  #
-# simulations run in GROMACS. You must supply a      #
-# contact file, with 10-12 parameters, the .tpr file #
-# used for the simulation, and an trajectory (.xtc)  #
-# file. You must also have Gromacs (4.x) installed   #
-# on your machine. This is a straightforward script  #
-# you can modify in any way you see fit. You must    #
-# observe GNU license to use it.                     #
-# Written by Paul Whitford, 11/02/2009.              #
-# Debugged by Ronaldo Oliveira, 05/15/10             #
-# Translated to python by Frederico Campos Freitas   #
-######################################################
+###################################################################################################
+# Contacts.py is a simple scritp written to analyze simulations run in GROMACS. You must supply   #
+# a contact file, with 10-12 parameters, the .tpr file used for the simulation, and an trajectory #
+# (.xtc) file. You must also have Gromacs (4.x) installed on your machine. This is a straightfor- #
+# ward script you can modify in any way you see fit. You must observe GNU license to use it.      #
+# Written by Paul Whitford, 11/02/2009.                 						                  #
+# Debugged by Ronaldo Oliveira, 05/15/10					            					      #
+# Translated to python by Frederico Campos Freitas 03/06/2018					  				  #
+###################################################################################################
 
 
 
@@ -38,14 +34,14 @@ CUTOFF = 1.2
 SKIPFRAMES = 1 #1 means no skkiped frames. 2 will skip each 1 frame and so on.
 t0 = 0 #initial time to extract trajectory
 ttf = 1E20 #final time to extract trajectory
-DDT = 10000  #time increment to generate temporary pdb files
+DDT = 20000  #time increment to generate temporary pdb files
 GROMACSpath = '' #gromacs executable path files
 
 
 
 ##################################################################################################
-# Function to convert binary trajectory file into readable temporary pieces
-#
+# Function to convert binary trajectory file into readable temporary pieces			 	 		 #
+#																								 #
 ##################################################################################################
 def ConvertReadable(gmxpath,filetpr,filextc,frameskip,Ti,Tf):
 
@@ -55,8 +51,8 @@ def ConvertReadable(gmxpath,filetpr,filextc,frameskip,Ti,Tf):
 ##################################################################################################
 
 ##################################################################################################
-# Function to delete converted trajectory temporary files
-#
+# Function to delete converted trajectory temporary files										 #
+#												 #
 ##################################################################################################
 def DeleteTemporary(Ti):
 
@@ -67,12 +63,11 @@ def DeleteTemporary(Ti):
 
 
 ##################################################################################################
-# Function to call contacts calculation and parallelize it
-#
+# Function to call contacts calculation and parallelize it					 #
+#												 #
 ##################################################################################################
-def CallDoContacts(cfcref,cttraj,cweigthfile,ca):
-	numcores = (multiprocessing.cpu_count())
-	pool = multiprocessing.Pool(processes=numcores)
+def CallDoContacts(anumcores,cfcref,cttraj,cweigthfile,ca):
+	pool = multiprocessing.Pool(processes=anumcores)
 	C1Contacts = partial(DoContacts, cfcref)
 	C2Contacts = partial(C1Contacts, cttraj)
 	C3Contacts = partial(C2Contacts, cweigthfile)
@@ -80,12 +75,12 @@ def CallDoContacts(cfcref,cttraj,cweigthfile,ca):
 	pool.close()
 	pool.join()
 	return Qvec
-#
+
 ##################################################################################################
 
 ##################################################################################################
-# Function to calculate the contacts
-#
+# Function to calculate the contacts								 #
+#												 #
 ##################################################################################################
 
 def DoContacts(fcref,ttraj,weigthfile,a):
@@ -114,7 +109,7 @@ def main():
 		TRAJXTC = sys.argv[2]
 		CONTFILE = sys.argv[3]
 	else:
-		print ('One (or more) input file(s) is(are) missing. Please insert files using (at least): ./contacts_XX.py file.TPR file.XTC file.cont')
+		print ('One (or more) input file(s) is(are) missing. Please insert files using (at least): ./contacts_XX.py file.TPR file.XTC file.cont [weigthfile]')
 		sys.exit()
 	try:
 		tcontfile = np.genfromtxt(CONTFILE, dtype=float)
@@ -134,17 +129,19 @@ def main():
 	Rfcref = ((np.sqrt((6.0/5.0)*((tcontfile[:,4])/(tcontfile[:,3]))))*10)[np.newaxis, :].T # Distance between two contacts from file.cont
 	Afcref = np.concatenate((tcontfile[:,[0,1]], Rfcref), axis=1) #create array with Iaa and Jaa indices and Raa from file.cont
 
-	contacts = []
-	optcontacts = []
+	numcores = (multiprocessing.cpu_count())
+
+	contacts = np.array([])
+	optcontacts = np.array([])
 
 	to = t0
 	te = t0 + DDT
 
 	utimes = [] #timesteps already read in simulation
 	setimes = ''
-	X = []
-	Y = []
-	Z = []
+	X = np.array([])
+	Y = np.array([])
+	Z = np.array([])
 	numa = 0 #variable to count number of atoms
 	flagnuma = True
 
@@ -178,32 +175,33 @@ def main():
 					flagnuma = False
 
 			if 't=' in line:
-				setimes = float(line[26:1000])
+				setimes = float(line[27:100])
+			#if not np.any(utimes == setimes):
 			if setimes not in utimes:
 				repos = True #open to read positions
 				if ('ATOM' in line) and (repos):
-					X.append(float(line[30:37]))
-					Y.append(float(line[38:45]))
-					Z.append(float(line[46:53]))
+					X = np.append(X, (line[30:37]))
+					Y = np.append(Y, (line[38:45]))
+					Z = np.append(Z, (line[46:53]))
 				elif 'TER' in line:
 					repos = False #close to read positions
-					utimes.append(setimes)
-					Attraj = np.transpose(np.array([X,Y,Z])) #reconstruced array with positions of all atoms in each time
+					utimes = np.append(utimes, setimes)
+					Attraj = np.transpose(np.array([X,Y,Z], dtype=float)) #reconstruced array with positions of all atoms in each time
 					aa = range(len(Afcref))
-					BQQopt = CallDoContacts(Afcref,Attraj,Aweigthfile,aa)
+					BQQopt = CallDoContacts(numcores,Afcref,Attraj,Aweigthfile,aa)
 					TQQopt = np.sum(BQQopt, axis=0)
 					Q = TQQopt[0]
 					Qopt = TQQopt[1]
-					contacts.append([Q]) #inside time "for loop"
-					optcontacts.append([Qopt]) #inside time "for loop"
-					X = [] #position vector of each time
-					Y = []
-					Z = []
+					contacts = np.append(contacts, Q) #inside time "for loop"
+					optcontacts = np.append(optcontacts, Qopt) #inside time "for loop"
+					X = np.array([]) #position vector of each time
+					Y = np.array([])
+					Z = np.array([])
 		DeleteTemporary(to)
 		to = to + DDT
 		te = te + DDT
-		np.savetxt('contacts.dat',contacts)
-		np.savetxt('opt-contacts.dat',optcontacts)
+		np.savetxt('contacts.dat',contacts,fmt='%d')
+		np.savetxt('opt-contacts.dat',optcontacts,fmt='%10.3f')
 #	print numa #to print the number of elements analyzed.
 
 
