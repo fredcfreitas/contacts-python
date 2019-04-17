@@ -34,7 +34,7 @@ CUTOFF = 1.2
 SKIPFRAMES = 1 #1 means no skkiped frames. 2 will skip each 1 frame and so on.
 t0 = 0 #initial time to extract trajectory
 ttf = 1E20 #final time to extract trajectory
-DDT = 10000  #time increment to generate temporary pdb files
+DDT = 20000  #time increment to generate temporary pdb files
 GROMACSpath = '' #gromacs executable path files
 
 
@@ -66,9 +66,8 @@ def DeleteTemporary(Ti):
 # Function to call contacts calculation and parallelize it					 #
 #												 #
 ##################################################################################################
-def CallDoContacts(cfcref,cttraj,cweigthfile,ca):
-	numcores = (multiprocessing.cpu_count())
-	pool = multiprocessing.Pool(processes=numcores)
+def CallDoContacts(anumcores,cfcref,cttraj,cweigthfile,ca):
+	pool = multiprocessing.Pool(processes=anumcores)
 	C1Contacts = partial(DoContacts, cfcref)
 	C2Contacts = partial(C1Contacts, cttraj)
 	C3Contacts = partial(C2Contacts, cweigthfile)
@@ -110,7 +109,7 @@ def main():
 		TRAJXTC = sys.argv[2]
 		CONTFILE = sys.argv[3]
 	else:
-		print ('One (or more) input file(s) is(are) missing. Please insert files using (at least): ./contacts_XX.py file.TPR file.XTC file.cont')
+		print ('One (or more) input file(s) is(are) missing. Please insert files using (at least): ./contacts_XX.py file.TPR file.XTC file.cont [weigthfile]')
 		sys.exit()
 	try:
 		tcontfile = np.genfromtxt(CONTFILE, dtype=float)
@@ -129,6 +128,8 @@ def main():
 
 	Rfcref = ((np.sqrt((6.0/5.0)*((tcontfile[:,4])/(tcontfile[:,3]))))*10)[np.newaxis, :].T # Distance between two contacts from file.cont
 	Afcref = np.concatenate((tcontfile[:,[0,1]], Rfcref), axis=1) #create array with Iaa and Jaa indices and Raa from file.cont
+
+	numcores = (multiprocessing.cpu_count())
 
 	contacts = np.array([])
 	optcontacts = np.array([])
@@ -174,7 +175,8 @@ def main():
 					flagnuma = False
 
 			if 't=' in line:
-				setimes = float(line[26:1000])
+				setimes = float(line[27:100])
+			#if not np.any(utimes == setimes):
 			if setimes not in utimes:
 				repos = True #open to read positions
 				if ('ATOM' in line) and (repos):
@@ -184,9 +186,9 @@ def main():
 				elif 'TER' in line:
 					repos = False #close to read positions
 					utimes = np.append(utimes, setimes)
-					Attraj = np.transpose(np.array([X.astype(float),Y.astype(float),Z.astype(float)])) #reconstruced array with positions of all atoms in each time
+					Attraj = np.transpose(np.array([X,Y,Z], dtype=float)) #reconstruced array with positions of all atoms in each time
 					aa = range(len(Afcref))
-					BQQopt = CallDoContacts(Afcref,Attraj,Aweigthfile,aa)
+					BQQopt = CallDoContacts(numcores,Afcref,Attraj,Aweigthfile,aa)
 					TQQopt = np.sum(BQQopt, axis=0)
 					Q = TQQopt[0]
 					Qopt = TQQopt[1]
@@ -198,8 +200,8 @@ def main():
 		DeleteTemporary(to)
 		to = to + DDT
 		te = te + DDT
-		np.savetxt('contacts.dat',contacts)
-		np.savetxt('opt-contacts.dat',optcontacts)
+		np.savetxt('contacts.dat',contacts,fmt='%d')
+		np.savetxt('opt-contacts.dat',optcontacts,fmt='%10.3f')
 #	print numa #to print the number of elements analyzed.
 
 
