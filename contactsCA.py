@@ -5,9 +5,15 @@
 # a contact file, with 10-12 parameters, the .tpr file used for the simulation, and an trajectory #
 # (.xtc) file. You must also have Gromacs (4.x) installed on your machine. This is a straightfor- #
 # ward script you can modify in any way you see fit. You must observe GNU license to use it.      #
+<<<<<<< HEAD
 # Written by Paul Whitford, 11/02/2009.                 			                  #
 # Debugged by Ronaldo Oliveira, 05/15/10					                  #
 # Translated to python by Frederico Campos Freitas 03/06/2018					  #
+=======
+# Written by Paul Whitford, 11/02/2009.                 						                  #
+# Debugged by Ronaldo Oliveira, 05/15/10					            					      #
+# Translated to python by Frederico Campos Freitas 03/06/2018					  				  #
+>>>>>>> 93bf07f8eb881ede7a8905566dc46a00e01f02fd
 ###################################################################################################
 
 
@@ -28,20 +34,25 @@ import numpy as np
 import subprocess
 import multiprocessing
 from functools import partial
-
+import time
 
 CUTOFF = 1.2
 SKIPFRAMES = 1 #1 means no skkiped frames. 2 will skip each 1 frame and so on.
-t0 = 0 #initial time to extract trajectory
+t0 = 99900 #initial time to extract trajectory
 ttf = 1E20 #final time to extract trajectory
-DDT = 20000  #time increment to generate temporary pdb files
+DDT = 20 #20000  #time increment to generate temporary pdb files
 GROMACSpath = '' #gromacs executable path files
 
 
 
 ##################################################################################################
+<<<<<<< HEAD
 # Function to convert binary trajectory file into readable temporary pieces			 #
 #												 #
+=======
+# Function to convert binary trajectory file into readable temporary pieces			 	 		 #
+#																								 #
+>>>>>>> 93bf07f8eb881ede7a8905566dc46a00e01f02fd
 ##################################################################################################
 def ConvertReadable(gmxpath,filetpr,filextc,frameskip,Ti,Tf):
 
@@ -51,7 +62,11 @@ def ConvertReadable(gmxpath,filetpr,filextc,frameskip,Ti,Tf):
 ##################################################################################################
 
 ##################################################################################################
+<<<<<<< HEAD
 # Function to delete converted trajectory temporary files					 #
+=======
+# Function to delete converted trajectory temporary files										 #
+>>>>>>> 93bf07f8eb881ede7a8905566dc46a00e01f02fd
 #												 #
 ##################################################################################################
 def DeleteTemporary(Ti):
@@ -99,6 +114,8 @@ def DoContacts(fcref,ttraj,weigthfile,a):
 
 def main():
 
+	start1 = time.time()
+
 	if len(sys.argv) > 4: ## To open just if exist  file in argument
 		TOPOLTPR = sys.argv[1]
 		TRAJXTC = sys.argv[2]
@@ -125,6 +142,15 @@ def main():
 
 	print 'Reading a contact file'
 
+#	if '.tpr' in TOPOLTPR:
+#		print 'TPR file'
+#	elif: '.ndx' in TOPOLTPR:
+#		print 'ndx file'
+#	else:
+#		'I did not understand you'
+
+	end1 = time.time()
+
 
 	Rfcref = ((np.sqrt((6.0/5.0)*((tcontfile[:,4])/(tcontfile[:,3]))))*10)[np.newaxis, :].T # Distance between two contacts from file.cont
 	Afcref = np.concatenate((tcontfile[:,[0,1]], Rfcref), axis=1) #create array with Iaa and Jaa indices and Raa from file.cont
@@ -145,7 +171,11 @@ def main():
 	numa = 0 #variable to count number of atoms
 	flagnuma = True
 
+	end2 = time.time()
+
 	while (to < ttf):
+
+		end3 = time.time()
 
 		try:
 			ConvertReadable(GROMACSpath,TOPOLTPR,TRAJXTC,SKIPFRAMES,to,te)
@@ -166,6 +196,8 @@ def main():
 			print ('I/O error. %s' % errnoa)
 			sys.exit()
 
+		end4 = time.time()
+
 		for line in tempfile:
 
 			if to==t0: #node to calculate number of atoms
@@ -173,6 +205,8 @@ def main():
 					numa +=1
 				elif 'TER' in line:
 					flagnuma = False
+
+			end5 = time.time()
 
 			if 't=' in line:
 				setimes = float(line[27:100])
@@ -184,6 +218,7 @@ def main():
 					Y = np.append(Y, (line[38:45]))
 					Z = np.append(Z, (line[46:53]))
 				elif 'TER' in line:
+					end6 = time.time()
 					repos = False #close to read positions
 					utimes = np.append(utimes, setimes)
 					Attraj = np.transpose(np.array([X,Y,Z], dtype=float)) #reconstruced array with positions of all atoms in each time
@@ -197,9 +232,22 @@ def main():
 					X = np.array([]) #position vector of each time
 					Y = np.array([])
 					Z = np.array([])
+
+					end7 = time.time()
+
 		DeleteTemporary(to)
 		to = to + DDT
 		te = te + DDT
+
+		print start1
+		print end1
+		print end2
+		print end3
+		print end4
+		print end5
+		print end6
+		print end7
+
 		np.savetxt('contacts.dat',contacts,fmt='%d')
 		np.savetxt('opt-contacts.dat',optcontacts,fmt='%10.3f')
 #	print numa #to print the number of elements analyzed.
