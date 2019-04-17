@@ -5,15 +5,9 @@
 # a contact file, with 10-12 parameters, the .tpr file used for the simulation, and an trajectory #
 # (.xtc) file. You must also have Gromacs (4.x) installed on your machine. This is a straightfor- #
 # ward script you can modify in any way you see fit. You must observe GNU license to use it.      #
-<<<<<<< HEAD
-# Written by Paul Whitford, 11/02/2009.                 			                  #
-# Debugged by Ronaldo Oliveira, 05/15/10					                  #
-# Translated to python by Frederico Campos Freitas 03/06/2018					  #
-=======
 # Written by Paul Whitford, 11/02/2009.                 						                  #
 # Debugged by Ronaldo Oliveira, 05/15/10					            					      #
 # Translated to python by Frederico Campos Freitas 03/06/2018					  				  #
->>>>>>> 93bf07f8eb881ede7a8905566dc46a00e01f02fd
 ###################################################################################################
 
 
@@ -46,13 +40,8 @@ GROMACSpath = '' #gromacs executable path files
 
 
 ##################################################################################################
-<<<<<<< HEAD
-# Function to convert binary trajectory file into readable temporary pieces			 #
-#												 #
-=======
 # Function to convert binary trajectory file into readable temporary pieces			 	 		 #
 #																								 #
->>>>>>> 93bf07f8eb881ede7a8905566dc46a00e01f02fd
 ##################################################################################################
 def ConvertReadable(gmxpath,filetpr,filextc,frameskip,Ti,Tf):
 
@@ -62,11 +51,7 @@ def ConvertReadable(gmxpath,filetpr,filextc,frameskip,Ti,Tf):
 ##################################################################################################
 
 ##################################################################################################
-<<<<<<< HEAD
-# Function to delete converted trajectory temporary files					 #
-=======
 # Function to delete converted trajectory temporary files										 #
->>>>>>> 93bf07f8eb881ede7a8905566dc46a00e01f02fd
 #												 #
 ##################################################################################################
 def DeleteTemporary(Ti):
