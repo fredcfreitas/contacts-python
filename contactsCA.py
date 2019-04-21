@@ -5,9 +5,9 @@
 # a contact file, with 10-12 parameters, the .tpr file used for the simulation, and an trajectory #
 # (.xtc) file. You must also have Gromacs (4.x) installed on your machine. This is a straightfor- #
 # ward script you can modify in any way you see fit. You must observe GNU license to use it.      #
-# Written by Paul Whitford, 11/02/2009.                 						                  #
-# Debugged by Ronaldo Oliveira, 05/15/10					            					      #
-# Translated to python by Frederico Campos Freitas 03/06/2018					  				  #
+# Written by Paul Whitford, 11/02/2009.				                              		                  #
+# Debugged by Ronaldo Oliveira, 05/15/10                                                          #
+# Translated to python by Frederico Campos Freitas 03/06/2018   				                          #
 ###################################################################################################
 
 
@@ -29,35 +29,36 @@ import subprocess
 import multiprocessing
 from functools import partial
 import time
+from bisect import bisect_left
 
 CUTOFF = 1.2
 SKIPFRAMES = 1 #1 means no skkiped frames. 2 will skip each 1 frame and so on.
-t0 = 99900 #initial time to extract trajectory
+t0 = 0 #initial time to extract trajectory
 ttf = 1E20 #final time to extract trajectory
-DDT = 20 #20000  #time increment to generate temporary pdb files
+DDT = 4000 #20000  #time increment to generate temporary pdb files
 GROMACSpath = '' #gromacs executable path files
 
 
 
 ##################################################################################################
-# Function to convert binary trajectory file into readable temporary pieces			 	 		 #
-#																								 #
+# Function to convert binary trajectory file into readable temporary pieces			 	 		           #
+#																								                                                 #
 ##################################################################################################
 def ConvertReadable(gmxpath,filetpr,filextc,frameskip,Ti,Tf):
 
 	runtrjconv = "echo 0 | " + gmxpath + "trjconv -b " + str(Ti) + " -e " + str(Tf) + " -nice 0 -skip " + str(frameskip) + " -s " + filetpr + " -o teste-" + str(Ti) + ".pdb -f " + filextc + " " #bash command to be runned
-	tstatus = subprocess.check_output(['bash','-c', runtrjconv]) # run trjconv to every timestep
+	tstatus = subprocess.Popen(['bash','-c', runtrjconv], stdout=subprocess.PIPE).communicate() # run trjconv to every timestep
 	return tstatus
 ##################################################################################################
 
 ##################################################################################################
-# Function to delete converted trajectory temporary files										 #
-#												 #
+# Function to delete converted trajectory temporary files										                     #
+#												                                                                         #
 ##################################################################################################
 def DeleteTemporary(Ti):
 
 	deletetemp = "rm teste-" + str(Ti) + ".pdb" #bash command to be runned
-   	subprocess.check_output(['bash','-c', deletetemp]) # run trjconv to every timestep
+   	tstatus = subprocess.Popen(['bash','-c', deletetemp], stdout=subprocess.PIPE).communicate() # run trjconv to every timestep
    	return
 ##################################################################################################
 
@@ -121,7 +122,7 @@ def main():
 			Aweigthfile = np.ones(len(tcontfile))
 			print ('Without weigth file.')
 	except (IOError) as errno:
-		print ('I/O error. %s' % errno)
+		print ('I/O error. %s' %errno)
 		sys.exit()
 
 
@@ -185,18 +186,18 @@ def main():
 
 		for line in tempfile:
 
-			if to==t0: #node to calculate number of atoms
-				if ('ATOM' in line) and (flagnuma):
-					numa +=1
-				elif 'TER' in line:
-					flagnuma = False
+#			if to==t0: #node to calculate number of atoms
+#				if ('ATOM' in line) and (flagnuma):
+#					numa +=1
+#				elif 'TER' in line:
+#					flagnuma = False
 
 			end5 = time.time()
 
 			if 't=' in line:
 				setimes = float(line[27:100])
-			#if not np.any(utimes == setimes):
-			if setimes not in utimes:
+			#if setimes not in utimes:
+			if (bisect_left(utimes, setimes) >= len(utimes)):
 				repos = True #open to read positions
 				if ('ATOM' in line) and (repos):
 					X = np.append(X, (line[30:37]))
