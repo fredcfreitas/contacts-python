@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/env python3
 #
 ###################################################################################################
 # Contacts.py is a simple scritp written to analyze simulations run in GROMACS. You must supply   #
@@ -122,11 +122,11 @@ def main():
 			Aweigthfile = np.ones(len(tcontfile))
 			print ('Without weigth file.')
 	except (IOError) as errno:
-		print ('I/O error. %s' %errno)
+		print(('I/O error. %s' %errno))
 		sys.exit()
 
 
-	print 'Reading a contact file'
+	print('Reading a contact file')
 
 #	if '.tpr' in TOPOLTPR:
 #		print 'TPR file'
@@ -166,12 +166,12 @@ def main():
 		try:
 			ConvertReadable(GROMACSpath,TOPOLTPR,TRAJXTC,SKIPFRAMES,to,te)
 		except (IOError) as errnoa:
-			print ('I/O error. %s' % errnoa)
+			print(('I/O error. %s' % errnoa))
 			sys.exit()
 		except ValueError:
-			print 'There is something wrong.'
+			print('There is something wrong.')
 		except:
-			print 'You made a bad choice for initial (or final) time. But there is no problem.'
+			print('You made a bad choice for initial (or final) time. But there is no problem.')
 			to=to-2*DDT
 			te = -1 #last frame to read from trajectory
 			ConvertReadable(GROMACSpath,TOPOLTPR,TRAJXTC,SKIPFRAMES,to,te)
@@ -179,7 +179,7 @@ def main():
 			postemp = open('teste-' + str(to) + '.pdb', 'r') #open temporary Translated trajectory file
 			tempfile = postemp.readlines() #split it in a list of lines
 		except (IOError) as errnoa:
-			print ('I/O error. %s' % errnoa)
+			print(('I/O error. %s' % errnoa))
 			sys.exit()
 
 		end4 = time.time()
@@ -208,7 +208,7 @@ def main():
 					repos = False #close to read positions
 					utimes = np.append(utimes, setimes)
 					Attraj = np.transpose(np.array([X,Y,Z], dtype=float)) #reconstruced array with positions of all atoms in each time
-					aa = range(len(Afcref))
+					aa = list(range(len(Afcref)))
 					BQQopt = CallDoContacts(numcores,Afcref,Attraj,Aweigthfile,aa)
 					TQQopt = np.sum(BQQopt, axis=0)
 					Q = TQQopt[0]
@@ -225,14 +225,14 @@ def main():
 		to = to + DDT
 		te = te + DDT
 
-		print start1
-		print end1
-		print end2
-		print end3
-		print end4
-		print end5
-		print end6
-		print end7
+		#print start1
+		#print end1
+		#print end2
+		#print end3
+		#print end4
+		#print end5
+		#print end6
+		#print end7
 
 		np.savetxt('contacts.dat',contacts,fmt='%d')
 		np.savetxt('opt-contacts.dat',optcontacts,fmt='%10.3f')
