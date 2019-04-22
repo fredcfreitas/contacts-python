@@ -1,22 +1,23 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 #
-###################################################################################################
-# Contacts.py is a simple scritp written to analyze simulations run in GROMACS. You must supply   #
-# a contact file, with 10-12 parameters, the .tpr file used for the simulation, and an trajectory #
-# (.xtc) file. You must also have Gromacs (4.x) installed on your machine. This is a straightfor- #
-# ward script you can modify in any way you see fit. You must observe GNU license to use it.      #
-# Written by Paul Whitford, 11/02/2009.				                              		                  #
-# Debugged by Ronaldo Oliveira, 05/15/10                                                          #
-# Translated to python by Frederico Campos Freitas 03/06/2018   				                          #
-###################################################################################################
+################################################################################
+# Contacts.py is a simple scritp written to analyze simulations run in GROMACS.#
+# You must supply a contact file, with 10-12 parameters, the .tpr file used for#
+# the simulation, and an trajectory (.xtc) file. You must also have Gromacs	   #
+# (4.x) installed on your machine. This is a straightforward script you can	   #
+# modify in any way you see fit. You must observe GNU license to use it.       #
+# Written by Paul Whitford, 11/02/2009.				                           #
+# Debugged by Ronaldo Oliveira, 05/15/10                                       #
+# Translated to python by Frederico Campos Freitas 03/06/2018   			   #
+################################################################################
 
 
 
 # CONTFILE is the file that defines the contacts.  Specific formatting must be
-# followed: Copy the "pairs" terms from your C-Alpha Structure-based topology file.
-# remove the "1" and reformat each line so it is space delimited.  If you have
-# a blank line in the contact file, the program will probably crash.
-# example formatting can be found at http://sbm.ucsd.edu/contact_ex
+# followed: Copy the "pairs" terms from your C-Alpha Structure-based topology
+# file. Remove the "1" and reformat each line so it is space delimited.
+# If you have a blank line in the contact file, the program will probably crash.
+# Example formatting can be found at http://sbm.ucsd.edu/contact_ex
 
 import sys
 import numpy as np
@@ -40,33 +41,31 @@ GROMACSpath = '' #gromacs executable path files
 
 
 
-##################################################################################################
-# Function to convert binary trajectory file into readable temporary pieces			 	 		           #
-#																								                                                 #
-##################################################################################################
+################################################################################
+# Function to convert binary trajectory file into readable temporary pieces	   #
+#																			   #
+################################################################################
 def ConvertReadable(gmxpath,filetpr,filextc,frameskip,Ti,Tf):
-
 	runtrjconv = "echo 0 | " + gmxpath + "trjconv -b " + str(Ti) + " -e " + str(Tf) + " -nice 0 -skip " + str(frameskip) + " -s " + filetpr + " -o teste-" + str(Ti) + ".pdb -f " + filextc + " " #bash command to be runned
 	tstatus = subprocess.Popen(['bash','-c', runtrjconv], stdout=subprocess.PIPE).communicate() # run trjconv to every timestep
 	return tstatus
-##################################################################################################
+################################################################################
 
-##################################################################################################
+################################################################################
 # Function to delete converted trajectory temporary files										                     #
 #												                                                                         #
-##################################################################################################
+################################################################################
 def DeleteTemporary(Ti):
-
 	deletetemp = "rm teste-" + str(Ti) + ".pdb" #bash command to be runned
    	tstatus = subprocess.Popen(['bash','-c', deletetemp], stdout=subprocess.PIPE).communicate() # run trjconv to every timestep
-	return
-##################################################################################################
+	return tstatus
+################################################################################
 
 
-##################################################################################################
-# Function to call contacts calculation and parallelize it					 #
-#												 #
-##################################################################################################
+################################################################################
+# Function to call contacts calculation and parallelize it					   #
+#												 							   #
+################################################################################
 def CallDoContacts(cfcref,cttraj,cweigthfile,ca):
 	pool = mp.Pool(mp.cpu_count())
 	#C1Contacts = partial(DoContacts, cfcref)
@@ -78,12 +77,12 @@ def CallDoContacts(cfcref,cttraj,cweigthfile,ca):
 	#pool.join()
 	return Qvec
 
-##################################################################################################
+################################################################################
 
-##################################################################################################
-# Function to calculate the contacts								 #
-#												 #
-##################################################################################################
+################################################################################
+# Function to calculate the contacts								 		   #
+#							 												   #
+################################################################################
 
 def DoContacts(fcref,ttraj,weigthfile,a):
 	QQ = 0
@@ -96,7 +95,7 @@ def DoContacts(fcref,ttraj,weigthfile,a):
 		QQopt = 1*weigthfile[a] #calculating Optimized contacts
 	return QQ,QQopt
 #
-##################################################################################################
+################################################################################
 
 
 def main():
