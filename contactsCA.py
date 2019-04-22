@@ -26,7 +26,7 @@ import numpy as np
 #from itertools import islice
 #from scipy import stats
 import subprocess
-import multiprocessing
+import multiprocessing as mp
 from functools import partial
 import time
 from bisect import bisect_left
@@ -67,14 +67,15 @@ def DeleteTemporary(Ti):
 # Function to call contacts calculation and parallelize it					 #
 #												 #
 ##################################################################################################
-def CallDoContacts(anumcores,cfcref,cttraj,cweigthfile,ca):
-	pool = multiprocessing.Pool(processes=anumcores)
-	C1Contacts = partial(DoContacts, cfcref)
-	C2Contacts = partial(C1Contacts, cttraj)
-	C3Contacts = partial(C2Contacts, cweigthfile)
-	Qvec = pool.map(C3Contacts, ca)
+def CallDoContacts(cfcref,cttraj,cweigthfile,ca):
+	pool = mp.Pool(mp.cpu_count())
+	#C1Contacts = partial(DoContacts, cfcref)
+	#C2Contacts = partial(C1Contacts, cttraj)
+	#C3Contacts = partial(C2Contacts, cweigthfile)
+	#Qvec = pool.map(C3Contacts, ca)
+	Qvec = pool.apply(DoContacts, args=(cfcref,cttraj,cweigthfile,a) for a in ca)
 	pool.close()
-	pool.join()
+	#pool.join()
 	return Qvec
 
 ##################################################################################################
@@ -209,7 +210,7 @@ def main():
 					utimes = np.append(utimes, setimes)
 					Attraj = np.transpose(np.array([X,Y,Z], dtype=float)) #reconstruced array with positions of all atoms in each time
 					aa = list(range(len(Afcref)))
-					BQQopt = CallDoContacts(numcores,Afcref,Attraj,Aweigthfile,aa)
+					BQQopt = CallDoContacts(xAfcref,Attraj,Aweigthfile,aa)
 					TQQopt = np.sum(BQQopt, axis=0)
 					Q = TQQopt[0]
 					Qopt = TQQopt[1]
