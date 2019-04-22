@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/python
 #
 ###################################################################################################
 # Contacts.py is a simple scritp written to analyze simulations run in GROMACS. You must supply   #
@@ -59,7 +59,7 @@ def DeleteTemporary(Ti):
 
 	deletetemp = "rm teste-" + str(Ti) + ".pdb" #bash command to be runned
    	tstatus = subprocess.Popen(['bash','-c', deletetemp], stdout=subprocess.PIPE).communicate() # run trjconv to every timestep
-   	return
+	return
 ##################################################################################################
 
 
@@ -73,7 +73,7 @@ def CallDoContacts(cfcref,cttraj,cweigthfile,ca):
 	#C2Contacts = partial(C1Contacts, cttraj)
 	#C3Contacts = partial(C2Contacts, cweigthfile)
 	#Qvec = pool.map(C3Contacts, ca)
-	Qvec = pool.apply(DoContacts, args=(cfcref,cttraj,cweigthfile,a) for a in ca)
+	Qvec = [pool.apply(DoContacts, args=(cfcref,cttraj,cweigthfile,a)) for a in ca]
 	pool.close()
 	#pool.join()
 	return Qvec
@@ -142,7 +142,7 @@ def main():
 	Rfcref = ((np.sqrt((6.0/5.0)*((tcontfile[:,4])/(tcontfile[:,3]))))*10)[np.newaxis, :].T # Distance between two contacts from file.cont
 	Afcref = np.concatenate((tcontfile[:,[0,1]], Rfcref), axis=1) #create array with Iaa and Jaa indices and Raa from file.cont
 
-	numcores = (multiprocessing.cpu_count())
+	#numcores = (multiprocessing.cpu_count())
 
 	contacts = np.array([])
 	optcontacts = np.array([])
@@ -210,7 +210,7 @@ def main():
 					utimes = np.append(utimes, setimes)
 					Attraj = np.transpose(np.array([X,Y,Z], dtype=float)) #reconstruced array with positions of all atoms in each time
 					aa = list(range(len(Afcref)))
-					BQQopt = CallDoContacts(xAfcref,Attraj,Aweigthfile,aa)
+					BQQopt = CallDoContacts(Afcref,Attraj,Aweigthfile,aa)
 					TQQopt = np.sum(BQQopt, axis=0)
 					Q = TQQopt[0]
 					Qopt = TQQopt[1]
