@@ -22,7 +22,9 @@
 import sys
 import subprocess
 import time
-import multiprocessing as mp
+import multiprocessing
+import multiprocessing.pool
+import concurrent.futures
 #from functools import partial
 from bisect import bisect_left
 import numpy as np
@@ -41,6 +43,18 @@ ttf = 1E20 #final time to extract trajectory
 DDT = 4000 #20000  #time increment to generate temporary pdb files
 GROMACSpath = '' #gromacs executable path files
 
+class NoDaemonProcess(multiprocessing.Process):
+    # make 'daemon' attribute always return False
+    def _get_daemon(self):
+        return False
+    def _set_daemon(self, value):
+        pass
+    daemon = property(_get_daemon, _set_daemon)
+
+# We sub-class multiprocessing.pool.Pool instead of multiprocessing.Pool
+# because the latter is only a wrapper function, not a proper class.
+class MyPool(multiprocessing.pool.Pool):
+	Process = NoDaemonProcess
 
 
 ################################################################################
@@ -69,7 +83,7 @@ def DeleteTemporary(Ti):
 #												 							   #
 ################################################################################
 def CallDoContacts(cfcref,cttraj,cweigthfile,ca):
-	pool = mp.Pool(mp.cpu_count())
+	pool = multiprocessing.Pool(multiprocessing.cpu_count())
 	#C1Contacts = partial(DoContacts, cfcref)
 	#C2Contacts = partial(C1Contacts, cttraj)
 	#C3Contacts = partial(C2Contacts, cweigthfile)
@@ -103,36 +117,37 @@ def DoContacts(fcref,ttraj,weigthfile,a):
 # Function to get atom coordinates from pdb file and calculate contacts		   #
 #							 												   #
 ################################################################################
-def read_and_calculate(setimes, utimes, contacts, optcontacts, X, Y, Z, line):
+def read_and_calculate(setimes, utimes, contacts, optcontacts, Afcref, Aweigthfile, X, Y, Z, tempfile):
 
 	end5 = time.time()
+	with concurrent.futures.ProcessPoolExecutor() as executor:
+		for line in tempfile:
+			if 't=' in line:
+				setimes = float(line[27:100])
+			#if setimes not in utimes:
+			if (bisect_left(utimes, setimes) >= len(utimes)):
+				repos = True #open to read positions
+				if ('ATOM' in line) and (repos):
+					X = np.append(X, (line[30:37]))
+					Y = np.append(Y, (line[38:45]))
+					Z = np.append(Z, (line[46:53]))
+				elif 'TER' in line:
+					end6 = time.time()
+					repos = False #close to read positions
+					utimes = np.append(utimes, setimes)
+					Attraj = np.transpose(np.array([X,Y,Z], dtype=float)) #reconstruced array with positions of all atoms in each time
+					aa = list(range(len(Afcref)))
+					BQQopt = CallDoContacts(Afcref, Attraj, Aweigthfile, aa)
+					TQQopt = np.sum(BQQopt, axis=0)
+					Q = TQQopt[0]
+					Qopt = TQQopt[1]
+					contacts = np.append(contacts, Q) #inside time "for loop"
+					optcontacts = np.append(optcontacts, Qopt) #inside time "for loop"
+					X = np.array([]) #position vector of each time
+					Y = np.array([])
+					Z = np.array([])
 
-	if 't=' in line:
-		setimes = float(line[27:100])
-	#if setimes not in utimes:
-	if (bisect_left(utimes, setimes) >= len(utimes)):
-		repos = True #open to read positions
-		if ('ATOM' in line) and (repos):
-			X = np.append(X, (line[30:37]))
-			Y = np.append(Y, (line[38:45]))
-			Z = np.append(Z, (line[46:53]))
-		elif 'TER' in line:
-			end6 = time.time()
-			repos = False #close to read positions
-			utimes = np.append(utimes, setimes)
-			Attraj = np.transpose(np.array([X,Y,Z], dtype=float)) #reconstruced array with positions of all atoms in each time
-			aa = list(range(len(Afcref)))
-			BQQopt = CallDoContacts(Afcref, Attraj, Aweigthfile, aa)
-			TQQopt = np.sum(BQQopt, axis=0)
-			Q = TQQopt[0]
-			Qopt = TQQopt[1]
-			contacts = np.append(contacts, Q) #inside time "for loop"
-			optcontacts = np.append(optcontacts, Qopt) #inside time "for loop"
-			X = np.array([]) #position vector of each time
-			Y = np.array([])
-			Z = np.array([])
-
-			end7 = time.time()
+	end7 = time.time()
 
 	return contacts, optcontacts
 
@@ -227,9 +242,14 @@ def main():
 
 		end4 = time.time()
 
-		pool = mp.Pool(mp.cpu_count())
 
-		contacts, optcontacts = [pool.apply(read_and_calculate, args=(setimes, utimes, contacts, optcontacts, X, Y, Z, line)) for line in tempfile]
+		contacts, optcontacts = read_and_calculate(setimes, utimes, contacts, optcontacts, Afcref, Aweigthfile, X, Y, Z, tempfile)
+		#pool = MyPool(multiprocessing.cpu_count())
+
+		#[contacts, optcontacts] = [pool.apply(read_and_calculate, args=(setimes, utimes, contacts, optcontacts, Afcref, Aweigthfile, X, Y, Z, line)) for line in tempfile]
+
+		#pool.close()
+		#pool.join()
 
 		DeleteTemporary(to)
 		to = to + DDT
