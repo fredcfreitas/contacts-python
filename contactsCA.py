@@ -13,24 +13,26 @@
 
 
 
-# CONTFILE is the file that defines the contacts.  Specific formatting must be
+# CONTFILE is the file that defines the contacts. Specific formatting must be
 # followed: Copy the "pairs" terms from your C-Alpha Structure-based topology
 # file. Remove the "1" and reformat each line so it is space delimited.
 # If you have a blank line in the contact file, the program will probably crash.
 # Example formatting can be found at http://sbm.ucsd.edu/contact_ex
 
 import sys
+import subprocess
+import time
+import multiprocessing as mp
+#from functools import partial
+from bisect import bisect_left
 import numpy as np
 #import scipy as sc
 #import progressbar
 #from time import sleep
 #from itertools import islice
 #from scipy import stats
-import subprocess
-import multiprocessing as mp
-from functools import partial
-import time
-from bisect import bisect_left
+
+
 
 CUTOFF = 1.2
 SKIPFRAMES = 1 #1 means no skkiped frames. 2 will skip each 1 frame and so on.
@@ -57,7 +59,7 @@ def ConvertReadable(gmxpath,filetpr,filextc,frameskip,Ti,Tf):
 ################################################################################
 def DeleteTemporary(Ti):
 	deletetemp = "rm teste-" + str(Ti) + ".pdb" #bash command to be runned
-   	tstatus = subprocess.Popen(['bash','-c', deletetemp], stdout=subprocess.PIPE).communicate() # run trjconv to every timestep
+	tstatus = subprocess.Popen(['bash','-c', deletetemp], stdout=subprocess.PIPE).communicate() # run trjconv to every timestep
 	return tstatus
 ################################################################################
 
@@ -72,7 +74,7 @@ def CallDoContacts(cfcref,cttraj,cweigthfile,ca):
 	#C2Contacts = partial(C1Contacts, cttraj)
 	#C3Contacts = partial(C2Contacts, cweigthfile)
 	#Qvec = pool.map(C3Contacts, ca)
-	Qvec = [pool.apply(DoContacts, args=(cfcref,cttraj,cweigthfile,a)) for a in ca]
+	Qvec = [pool.apply(DoContacts, args=(cfcref, cttraj, cweigthfile, a)) for a in ca]
 	pool.close()
 	#pool.join()
 	return Qvec
@@ -94,8 +96,49 @@ def DoContacts(fcref,ttraj,weigthfile,a):
 		QQ = 1 #usual contact calculation
 		QQopt = 1*weigthfile[a] #calculating Optimized contacts
 	return QQ,QQopt
-#
+
 ################################################################################
+
+################################################################################
+# Function to get atom coordinates from pdb file and calculate contacts		   #
+#							 												   #
+################################################################################
+def read_and_calculate(setimes, utimes, contacts, optcontacts, X, Y, Z, line):
+
+	end5 = time.time()
+
+	if 't=' in line:
+		setimes = float(line[27:100])
+	#if setimes not in utimes:
+	if (bisect_left(utimes, setimes) >= len(utimes)):
+		repos = True #open to read positions
+		if ('ATOM' in line) and (repos):
+			X = np.append(X, (line[30:37]))
+			Y = np.append(Y, (line[38:45]))
+			Z = np.append(Z, (line[46:53]))
+		elif 'TER' in line:
+			end6 = time.time()
+			repos = False #close to read positions
+			utimes = np.append(utimes, setimes)
+			Attraj = np.transpose(np.array([X,Y,Z], dtype=float)) #reconstruced array with positions of all atoms in each time
+			aa = list(range(len(Afcref)))
+			BQQopt = CallDoContacts(Afcref, Attraj, Aweigthfile, aa)
+			TQQopt = np.sum(BQQopt, axis=0)
+			Q = TQQopt[0]
+			Qopt = TQQopt[1]
+			contacts = np.append(contacts, Q) #inside time "for loop"
+			optcontacts = np.append(optcontacts, Qopt) #inside time "for loop"
+			X = np.array([]) #position vector of each time
+			Y = np.array([])
+			Z = np.array([])
+
+			end7 = time.time()
+
+	return contacts, optcontacts
+
+################################################################################
+
+
 
 
 def main():
@@ -112,7 +155,7 @@ def main():
 		TRAJXTC = sys.argv[2]
 		CONTFILE = sys.argv[3]
 	else:
-		print ('One (or more) input file(s) is(are) missing. Please insert files using (at least): ./contacts_XX.py file.TPR file.XTC file.cont [weigthfile]')
+		print('One (or more) input file(s) is(are) missing. Please insert files using (at least): ./contacts_XX.py file.TPR file.XTC file.cont [weigthfile]')
 		sys.exit()
 	try:
 		tcontfile = np.genfromtxt(CONTFILE, dtype=float)
@@ -120,7 +163,7 @@ def main():
 			Aweigthfile = np.genfromtxt(WEIGHT, dtype=float)
 		if len(sys.argv) == 4:
 			Aweigthfile = np.ones(len(tcontfile))
-			print ('Without weigth file.')
+			print('Without weigth file.')
 	except (IOError) as errno:
 		print(('I/O error. %s' %errno))
 		sys.exit()
@@ -129,9 +172,9 @@ def main():
 	print('Reading a contact file')
 
 #	if '.tpr' in TOPOLTPR:
-#		print 'TPR file'
+#		print('TPR file')
 #	elif: '.ndx' in TOPOLTPR:
-#		print 'ndx file'
+#		print('ndx file')
 #	else:
 #		'I did not understand you'
 
@@ -141,7 +184,7 @@ def main():
 	Rfcref = ((np.sqrt((6.0/5.0)*((tcontfile[:,4])/(tcontfile[:,3]))))*10)[np.newaxis, :].T # Distance between two contacts from file.cont
 	Afcref = np.concatenate((tcontfile[:,[0,1]], Rfcref), axis=1) #create array with Iaa and Jaa indices and Raa from file.cont
 
-	#numcores = (multiprocessing.cpu_count())
+
 
 	contacts = np.array([])
 	optcontacts = np.array([])
@@ -154,8 +197,8 @@ def main():
 	X = np.array([])
 	Y = np.array([])
 	Z = np.array([])
-	numa = 0 #variable to count number of atoms
-	flagnuma = True
+
+
 
 	end2 = time.time()
 
@@ -184,59 +227,25 @@ def main():
 
 		end4 = time.time()
 
-		for line in tempfile:
+		pool = mp.Pool(mp.cpu_count())
 
-#			if to==t0: #node to calculate number of atoms
-#				if ('ATOM' in line) and (flagnuma):
-#					numa +=1
-#				elif 'TER' in line:
-#					flagnuma = False
-
-			end5 = time.time()
-
-			if 't=' in line:
-				setimes = float(line[27:100])
-			#if setimes not in utimes:
-			if (bisect_left(utimes, setimes) >= len(utimes)):
-				repos = True #open to read positions
-				if ('ATOM' in line) and (repos):
-					X = np.append(X, (line[30:37]))
-					Y = np.append(Y, (line[38:45]))
-					Z = np.append(Z, (line[46:53]))
-				elif 'TER' in line:
-					end6 = time.time()
-					repos = False #close to read positions
-					utimes = np.append(utimes, setimes)
-					Attraj = np.transpose(np.array([X,Y,Z], dtype=float)) #reconstruced array with positions of all atoms in each time
-					aa = list(range(len(Afcref)))
-					BQQopt = CallDoContacts(Afcref,Attraj,Aweigthfile,aa)
-					TQQopt = np.sum(BQQopt, axis=0)
-					Q = TQQopt[0]
-					Qopt = TQQopt[1]
-					contacts = np.append(contacts, Q) #inside time "for loop"
-					optcontacts = np.append(optcontacts, Qopt) #inside time "for loop"
-					X = np.array([]) #position vector of each time
-					Y = np.array([])
-					Z = np.array([])
-
-					end7 = time.time()
+		contacts, optcontacts = [pool.apply(read_and_calculate, args=(setimes, utimes, contacts, optcontacts, X, Y, Z, line)) for line in tempfile]
 
 		DeleteTemporary(to)
 		to = to + DDT
 		te = te + DDT
 
-		#print start1
-		#print end1
-		#print end2
-		#print end3
-		#print end4
-		#print end5
-		#print end6
-		#print end7
+		#print(start1)
+		#print(end1)
+		#print(end2)
+		#print(end3)
+		#print(end4)
+		#print(end5)
+		#print(end6)
+		#print(end7)
 
-		np.savetxt('contacts.dat',contacts,fmt='%d')
-		np.savetxt('opt-contacts.dat',optcontacts,fmt='%10.3f')
-#	print numa #to print the number of elements analyzed.
+		np.savetxt('contacts.dat', contacts, fmt='%d')
+		np.savetxt('opt-contacts.dat', optcontacts, fmt='%10.3f')
 
 
 if __name__ == "__main__": main()
