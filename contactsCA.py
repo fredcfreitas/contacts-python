@@ -88,7 +88,7 @@ def CallDoContacts(cfcref,cttraj,cweigthfile,ca):
 	#C2Contacts = partial(C1Contacts, cttraj)
 	#C3Contacts = partial(C2Contacts, cweigthfile)
 	#Qvec = pool.map(C3Contacts, ca)
-	Qvec = [pool.apply(DoContacts, args=(cfcref, cttraj, cweigthfile, a)) for a in ca]
+	Qvec = [pool.apply_async(DoContacts, args=(cfcref, cttraj, cweigthfile, a)) for a in ca]
 	pool.close()
 	#pool.join()
 	return Qvec
