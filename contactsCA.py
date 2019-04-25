@@ -24,9 +24,9 @@ import subprocess
 import time
 import multiprocessing
 import multiprocessing.pool
+from bisect import bisect_left
 import concurrent.futures
 #from functools import partial
-from bisect import bisect_left
 import numpy as np
 #import scipy as sc
 #import progressbar
@@ -42,19 +42,6 @@ t0 = 0 #initial time to extract trajectory
 ttf = 1E20 #final time to extract trajectory
 DDT = 4000 #20000  #time increment to generate temporary pdb files
 GROMACSpath = '' #gromacs executable path files
-
-class NoDaemonProcess(multiprocessing.Process):
-    # make 'daemon' attribute always return False
-    def _get_daemon(self):
-        return False
-    def _set_daemon(self, value):
-        pass
-    daemon = property(_get_daemon, _set_daemon)
-
-# We sub-class multiprocessing.pool.Pool instead of multiprocessing.Pool
-# because the latter is only a wrapper function, not a proper class.
-class MyPool(multiprocessing.pool.Pool):
-	Process = NoDaemonProcess
 
 
 ################################################################################
@@ -89,9 +76,10 @@ def CallDoContacts(cfcref,cttraj,cweigthfile,ca):
 	#C3Contacts = partial(C2Contacts, cweigthfile)
 	#Qvec = pool.map(C3Contacts, ca)
 	Qvec = [pool.apply_async(DoContacts, args=(cfcref, cttraj, cweigthfile, a)) for a in ca]
+	q_vec = [p.get() for p in Qvec]
 	pool.close()
-	#pool.join()
-	return Qvec
+	pool.join()
+	return q_vec
 
 ################################################################################
 
@@ -119,7 +107,6 @@ def DoContacts(fcref,ttraj,weigthfile,a):
 ################################################################################
 def read_and_calculate(setimes, utimes, contacts, optcontacts, Afcref, Aweigthfile, X, Y, Z, tempfile):
 
-	end5 = time.time()
 	with concurrent.futures.ProcessPoolExecutor() as executor:
 		for line in tempfile:
 			if 't=' in line:
@@ -132,7 +119,6 @@ def read_and_calculate(setimes, utimes, contacts, optcontacts, Afcref, Aweigthfi
 					Y = np.append(Y, (line[38:45]))
 					Z = np.append(Z, (line[46:53]))
 				elif 'TER' in line:
-					end6 = time.time()
 					repos = False #close to read positions
 					utimes = np.append(utimes, setimes)
 					Attraj = np.transpose(np.array([X,Y,Z], dtype=float)) #reconstruced array with positions of all atoms in each time
@@ -147,8 +133,6 @@ def read_and_calculate(setimes, utimes, contacts, optcontacts, Afcref, Aweigthfi
 					Y = np.array([])
 					Z = np.array([])
 
-	end7 = time.time()
-
 	return contacts, optcontacts
 
 ################################################################################
@@ -157,9 +141,7 @@ def read_and_calculate(setimes, utimes, contacts, optcontacts, Afcref, Aweigthfi
 
 
 def main():
-
-	start1 = time.time()
-
+	start_time = time.time() #get initial time
 	if len(sys.argv) > 4: ## To open just if exist  file in argument
 		TOPOLTPR = sys.argv[1]
 		TRAJXTC = sys.argv[2]
@@ -183,23 +165,10 @@ def main():
 		print(('I/O error. %s' %errno))
 		sys.exit()
 
-
 	print('Reading a contact file')
-
-#	if '.tpr' in TOPOLTPR:
-#		print('TPR file')
-#	elif: '.ndx' in TOPOLTPR:
-#		print('ndx file')
-#	else:
-#		'I did not understand you'
-
-	end1 = time.time()
-
 
 	Rfcref = ((np.sqrt((6.0/5.0)*((tcontfile[:,4])/(tcontfile[:,3]))))*10)[np.newaxis, :].T # Distance between two contacts from file.cont
 	Afcref = np.concatenate((tcontfile[:,[0,1]], Rfcref), axis=1) #create array with Iaa and Jaa indices and Raa from file.cont
-
-
 
 	contacts = np.array([])
 	optcontacts = np.array([])
@@ -213,13 +182,7 @@ def main():
 	Y = np.array([])
 	Z = np.array([])
 
-
-
-	end2 = time.time()
-
 	while (to < ttf):
-
-		end3 = time.time()
 
 		try:
 			ConvertReadable(GROMACSpath,TOPOLTPR,TRAJXTC,SKIPFRAMES,to,te)
@@ -240,32 +203,17 @@ def main():
 			print(('I/O error. %s' % errnoa))
 			sys.exit()
 
-		end4 = time.time()
-
-
 		contacts, optcontacts = read_and_calculate(setimes, utimes, contacts, optcontacts, Afcref, Aweigthfile, X, Y, Z, tempfile)
-		#pool = MyPool(multiprocessing.cpu_count())
-
-		#[contacts, optcontacts] = [pool.apply(read_and_calculate, args=(setimes, utimes, contacts, optcontacts, Afcref, Aweigthfile, X, Y, Z, line)) for line in tempfile]
-
-		#pool.close()
-		#pool.join()
 
 		DeleteTemporary(to)
 		to = to + DDT
 		te = te + DDT
 
-		#print(start1)
-		#print(end1)
-		#print(end2)
-		#print(end3)
-		#print(end4)
-		#print(end5)
-		#print(end6)
-		#print(end7)
 
 		np.savetxt('contacts.dat', contacts, fmt='%d')
 		np.savetxt('opt-contacts.dat', optcontacts, fmt='%10.3f')
+		final_time = time.time()
+		print(final_time-start_time)
 
 
 if __name__ == "__main__": main()
