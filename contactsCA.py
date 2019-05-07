@@ -69,13 +69,13 @@ def DeleteTemporary(Ti):
 # Function to call contacts calculation and parallelize it					   #
 #												 							   #
 ################################################################################
-def CallDoContacts(cfcref,cttraj,cweigthfile,ca):
+def CallDoContacts(cfcref,cttraj,cweightfile,ca):
 	pool = multiprocessing.Pool(multiprocessing.cpu_count())
 	#C1Contacts = partial(DoContacts, cfcref)
 	#C2Contacts = partial(C1Contacts, cttraj)
-	#C3Contacts = partial(C2Contacts, cweigthfile)
+	#C3Contacts = partial(C2Contacts, cweightfile)
 	#Qvec = pool.map(C3Contacts, ca)
-	Qvec = [pool.apply_async(DoContacts, args=(cfcref, cttraj, cweigthfile, a)) for a in ca]
+	Qvec = [pool.apply_async(DoContacts, args=(cfcref, cttraj, cweightfile, a)) for a in ca]
 	q_vec = [p.get() for p in Qvec]
 	pool.close()
 	pool.join()
@@ -88,7 +88,7 @@ def CallDoContacts(cfcref,cttraj,cweigthfile,ca):
 #							 												   #
 ################################################################################
 
-def DoContacts(fcref,ttraj,weigthfile,a):
+def DoContacts(fcref,ttraj,weightfile,a):
 	QQ = 0
 	QQopt = 0
 	Ci = int(fcref.item((a,0))-1) #correction due indexation of python
@@ -96,7 +96,7 @@ def DoContacts(fcref,ttraj,weigthfile,a):
 	Rij = np.sqrt((((ttraj.item(Ci,0))-((ttraj.item(Cj,0))))**2)+(((ttraj.item(Ci,1))-((ttraj.item(Cj,1))))**2)+(((ttraj.item(Ci,2))-((ttraj.item(Cj,2))))**2))
 	if Rij <= fcref.item((a,2)) * CUTOFF:
 		QQ = 1 #usual contact calculation
-		QQopt = 1*weigthfile[a] #calculating Optimized contacts
+		QQopt = 1*weightfile[a] #calculating Optimized contacts
 	return QQ,QQopt
 
 ################################################################################
@@ -105,7 +105,7 @@ def DoContacts(fcref,ttraj,weigthfile,a):
 # Function to get atom coordinates from pdb file and calculate contacts		   #
 #							 												   #
 ################################################################################
-def read_and_calculate(setimes, utimes, contacts, optcontacts, Afcref, Aweigthfile, X, Y, Z, tempfile):
+def read_and_calculate(setimes, utimes, contacts, optcontacts, Afcref, Aweightfile, X, Y, Z, tempfile):
 
 	with concurrent.futures.ProcessPoolExecutor() as executor:
 		for line in tempfile:
@@ -123,7 +123,7 @@ def read_and_calculate(setimes, utimes, contacts, optcontacts, Afcref, Aweigthfi
 					utimes = np.append(utimes, setimes)
 					Attraj = np.transpose(np.array([X,Y,Z], dtype=float)) #reconstruced array with positions of all atoms in each time
 					aa = list(range(len(Afcref)))
-					BQQopt = CallDoContacts(Afcref, Attraj, Aweigthfile, aa)
+					BQQopt = CallDoContacts(Afcref, Attraj, Aweightfile, aa)
 					TQQopt = np.sum(BQQopt, axis=0)
 					Q = TQQopt[0]
 					Qopt = TQQopt[1]
@@ -152,15 +152,15 @@ def main():
 		TRAJXTC = sys.argv[2]
 		CONTFILE = sys.argv[3]
 	else:
-		print('One (or more) input file(s) is(are) missing. Please insert files using (at least): ./contacts_XX.py file.TPR file.XTC file.cont [weigthfile]')
+		print('One (or more) input file(s) is(are) missing. Please insert files using (at least): ./contacts_XX.py file.TPR file.XTC file.cont [weightfile]')
 		sys.exit()
 	try:
 		tcontfile = np.genfromtxt(CONTFILE, dtype=float)
 		if len(sys.argv) > 4:
-			Aweigthfile = np.genfromtxt(WEIGHT, dtype=float)
+			Aweightfile = np.genfromtxt(WEIGHT, dtype=float)
 		if len(sys.argv) == 4:
-			Aweigthfile = np.ones(len(tcontfile))
-			print('Without weigth file.')
+			Aweightfile = np.ones(len(tcontfile))
+			print('Without weight file.')
 	except (IOError) as errno:
 		print(('I/O error. %s' %errno))
 		sys.exit()
@@ -203,7 +203,7 @@ def main():
 			print(('I/O error. %s' % errnoa))
 			sys.exit()
 
-		contacts, optcontacts = read_and_calculate(setimes, utimes, contacts, optcontacts, Afcref, Aweigthfile, X, Y, Z, tempfile)
+		contacts, optcontacts = read_and_calculate(setimes, utimes, contacts, optcontacts, Afcref, Aweightfile, X, Y, Z, tempfile)
 
 		DeleteTemporary(to)
 		to = to + DDT
