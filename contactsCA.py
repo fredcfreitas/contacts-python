@@ -3,12 +3,12 @@
 ################################################################################
 # Contacts.py is a simple scritp written to analyze simulations run in GROMACS.#
 # You must supply a contact file, with 10-12 parameters, the .tpr file used for#
-# the simulation, and an trajectory (.xtc) file. You must also have Gromacs	   #
-# (4.x) installed on your machine. This is a straightforward script you can	   #
+# the simulation, and an trajectory (.xtc) file. You must also have Gromacs    #
+# (4.x) installed on your machine. This is a straightforward script you can    #
 # modify in any way you see fit. You must observe GNU license to use it.       #
-# Written by Paul Whitford, 11/02/2009.				                           #
+# Written by Paul Whitford, 11/02/2009.				               #
 # Debugged by Ronaldo Oliveira, 05/15/10                                       #
-# Translated to python by Frederico Campos Freitas 03/06/2018   			   #
+# Translated to python by Frederico Campos Freitas 03/06/2018                  #
 ################################################################################
 
 
