@@ -2,19 +2,20 @@
 #usage: python3 contacts_chunk.py #PDB_BASE #XTC_FILE #FILE.count_FILE #OUTPUT
 
 
-import os
+#import os
 import sys
-import time
-import glob
+#import time
+#import glob
 import numpy as np
-import multiprocessing
+#import multiprocessing
 import mdtraj as md
 
 THRESHOLD = 1.5
+CHUNK = 1000
 
 def main():
 
-    cores = multiprocessing.cpu_count()
+    #cores = multiprocessing.cpu_count()
 
     pdb_file = sys.argv[1]
 
@@ -33,7 +34,7 @@ def main():
 
     # trajectory = md.compute_distances(md.load(xtc_file, top=pdb_file), contacts_list)
     contacts = []
-    for chunk_trajectory in md.iterload(xtc_file, top=pdb_file, chunk=1000):
+    for chunk_trajectory in md.iterload(xtc_file, top=pdb_file, chunk=CHUNK):
         trajectory = md.compute_distances(chunk_trajectory, contacts_list)
         print((chunk_trajectory))
         contacts.append(np.sum(np.less_equal(trajectory, np.multiply(r_initial, THRESHOLD)), axis=1))
@@ -44,4 +45,5 @@ def main():
 
     return
 
-if __name__ == "__main__": main()
+if __name__ == "__main__": 
+    main()
