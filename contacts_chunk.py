@@ -10,8 +10,32 @@ import numpy as np
 #import multiprocessing
 import mdtraj as md
 
-THRESHOLD = 1.5
-CHUNK = 1000
+
+def evaluating_contacts_chunk(pdb_file, xtc_file, pairs_indexes, r_initial, \
+                              threshold=1.5, chunk=10000):
+    """
+    Function to evaluate the number of contacts for each given timestep.
+    Input:
+     pdb_file - File with your structure (PDB or GRO files for instance).
+     xtc_file - Trajectory.
+     pairs_indexes - Numpy array Nx2 with the pairs to be used to evaluate \
+     the contacts. (The first two columns of the pairs section in the TPR file \
+     without the header).
+     r_initial - Initial distance for each given pair to be used as a reference.
+     threshold - Value to be used as a threshold to evaluate the contacts.
+     chunk - Size of each chunk in which the trajectory will be analyzed.
+    Output: Nx1 numpy array with the total number of contacts for each \
+     timestep.
+    """
+    contacts = []
+    for chunk_trajectory in md.iterload(xtc_file, top=pdb_file, chunk=chunk):
+        trajectory = md.compute_distances(chunk_trajectory, pairs_indexes)
+        print((chunk_trajectory))
+        contacts.append(np.sum(np.less_equal(trajectory, np.multiply(r_initial,\
+                                                           threshold)), axis=1))
+
+    contacts = np.concatenate((contacts))
+    return contacts
 
 def main():
 
@@ -28,22 +52,17 @@ def main():
     contacts = np.genfromtxt(pairs_contacts)
 
     # This MUST be done due to python indexes, that starts from zero
-    contacts_list = np.subtract(contacts[:, 0:2], 1)
+    pairs_indexes = np.subtract(contacts[:, 0:2], 1)
 
-    r_initial = np.power(np.divide(np.multiply(contacts[:, 4], 2), contacts[:, 3]), np.divide(1, 6))
+    r_initial = np.power(np.divide(np.multiply(contacts[:, 4], 2), contacts[:,\
+                                                           3]), np.divide(1, 6))
 
-    # trajectory = md.compute_distances(md.load(xtc_file, top=pdb_file), contacts_list)
-    contacts = []
-    for chunk_trajectory in md.iterload(xtc_file, top=pdb_file, chunk=CHUNK):
-        trajectory = md.compute_distances(chunk_trajectory, contacts_list)
-        print((chunk_trajectory))
-        contacts.append(np.sum(np.less_equal(trajectory, np.multiply(r_initial, THRESHOLD)), axis=1))
+    final_contacts = evaluating_contacts_chunk(pdb_file, xtc_file, \
+                                               pairs_indexes, r_initial)
 
-    contacts = np.concatenate((contacts))
-
-    np.savetxt(output_file, contacts, fmt="%d")
+    np.savetxt(output_file, final_contacts, fmt="%d")
 
     return
 
-if __name__ == "__main__": 
+if __name__ == "__main__":
     main()
