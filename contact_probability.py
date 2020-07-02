@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-#usage: python3 contact_probability.py #
+#usage: python3 contact_probability.py  #PDB_BASE #XTC_FILE #FILE.count_FILE #OUTPUT
 
 import sys
 import numpy as np
@@ -60,7 +60,7 @@ def main():
     #
     # xtc_file = sys.argv[2]
     #
-    # pairs_contacts = sys.argv[3]
+    pairs_contacts = sys.argv[3]
     #
     # output_file = sys.argv[4]
 
