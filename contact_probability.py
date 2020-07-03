@@ -39,10 +39,9 @@ def gen_contact_probability(pdb_file, xtc_file, pairs_indexes, r_initial, \
         print((chunk_trajectory))
         # Getting the number of frames of each chunk and adding to the total
         n_frames += np.shape(trajectory)[0]
-        # for idx in range(np.shape(pairs_indexes)[0]):
-        for idj in range(np.shape(trajectory)[0]):
-            below_threshold = np.less_equal(trajectory[idj], cutoff)
-            probability += np.multiply(below_threshold, 1)
+        below_threshold = np.less_equal(trajectory, cutoff)
+        #to avoid another for loop, just summing along all rows
+        probability += np.sum(np.multiply(below_threshold, 1), axis=0)
 
     final_probability = np.divide(probability, n_frames)
 
