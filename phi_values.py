@@ -1,30 +1,19 @@
 #!/usr/bin/env python3
-#usage: python3 phi_values.py  #PDB_BASE #XTC_FILE #FILE.count_FILE #OUTPUT
-
-
-# read the input files
-# check if the regions' range overlap themselves. -> they must not.
-# evaluate which region each timestep belongs (transition, folded, unfolded)
-# evaluate the contact probability for each given pair
-# increase the counting for the given state/region
-# normalize the probability of contacts per region with the number found in the counting
-# generate a number with all residues/atoms involved in the native contacts
-# iterate over this list over the two colunms and divide the total number of found contacts by two -> to be sure you are counting right and don't messing the normalization
-
-# evaluate phi using phi(i) = sum_j (pij_TS-pij_U)/(pij_F-pij_U)
-#!/usr/bin/env python3
-#usage: python3 contact_probability.py  #PDB_BASE #XTC_FILE #FILE.count_FILE #OUTPUT
+# USAGE: python3 phi_values.py  #PDB_BASE #XTC_FILE #FILE.count_FILE #OUTPUT
+# *boundaries* should be in the order: unfolded, transition state; folded
+# in all cases.
 
 import sys
+import itertools
 import numpy as np
 import mdtraj as md
-import itertools
 
-def return_ordered(num_1, num2):
+
+def return_ordered(num_1, num_2):
     """Function to get two numbers and return the pair in ascending order"""
     if num_1 == num_2:
-        print("Both are the same.")
-        break
+        print("Both are the same. \n Please restart with the rigth values.")
+        return num_1, num_2
     elif num_1 < num_2:
         return num_1, num_2
     else:
@@ -80,8 +69,6 @@ def phi_i(pdb_file, xtc_file, pairs_indexes, r_initial, boundaries, \
 
     cutoff = np.multiply(threshold, r_initial)
 
-    probability = np.zeros(np.shape(r_initial))
-
     results = np.zeros((np.shape(boundaries)[0], np.shape(r_initial)[0]))
 
     atoms_involved = np.unique(pairs_indexes)
@@ -108,6 +95,9 @@ def phi_i(pdb_file, xtc_file, pairs_indexes, r_initial, boundaries, \
     for i in range(np.shape(boundaries)[0]):
         results[i] = np.divide(results[i], n_frames[i])
 
+    # Checking if all individual probabilities are normalized.
+    assert np.less_equal(np.max(results), 1)
+
     # Initiaizing the phi-values
     pij_transition_unfolded = np.zeros(np.shape(atoms_involved))
     pij_folded_unfolded = np.zeros(np.shape(atoms_involved))
@@ -118,13 +108,11 @@ def phi_i(pdb_file, xtc_file, pairs_indexes, r_initial, boundaries, \
     for i, atom in enumerate(atoms_involved):
         idx_atom = np.isin(pairs_indexes, atom).any(axis=1)
         pij_transition_unfolded[i] += \
-                    np.subtract(np.prod(results[0, idx_atom]), \
-                                np.prod(results[1, idx_atom]))
+                    np.sum(np.subtract(results[1, idx_atom], \
+                                       results[0, idx_atom]))
         pij_folded_unfolded += \
-                    np.subtract(np.prod(results[2, idx_atom]), \
-                                np.prod(results[1, idx_atom]))
-        # pij_unfolded[i] += np.prod(results[1, idx_atom])
-        # pij_folded[i] += np.prod(results[2, idx_atom])
+                    np.sum(np.subtract(results[2, idx_atom], \
+                                       results[0, idx_atom]))
 
     # Sanity check of number of frames read
     assert np.less_equal(np.sum(n_frames[:-1]), n_frames[-1])
@@ -132,8 +120,14 @@ def phi_i(pdb_file, xtc_file, pairs_indexes, r_initial, boundaries, \
     phi = np.nan_to_num(np.divide(pij_transition_unfolded, pij_folded_unfolded))
     atoms_indexes = np.add(np.arange(np.shape(atoms_involved)[0]), 1)
 
+    # # This return will give phi(i) where i is the atom/residue number given.
+    # return np.concatenate((fromlistto1d(atoms_involved), \
+    #                        fromlistto1d(phi)), axis=1)
+
+    # # This return will give phi(i) where i is the i-th atom/residue.
     return np.concatenate((fromlistto1d(atoms_indexes), \
                            fromlistto1d(phi)), axis=1)
+
 
 def main():
 
@@ -158,7 +152,7 @@ def main():
                                               float(sys.argv[6]))
 
     # Defining the unfolded state
-    second_lower, second_upper =  return_ordered(float(sys.argv[7]), \
+    second_lower, second_upper = return_ordered(float(sys.argv[7]), \
                                                  float(sys.argv[8]))
 
     # Defining the folded state
@@ -173,11 +167,10 @@ def main():
     assert checking_intervals_overlaping(boundaries)
 
 
-
     final_phi_i = phi_i(sys.argv[1], sys.argv[2], pairs_indexes, r_initial, \
                         boundaries)
 
-    np.savetxt(sys.argv[4], final_contacs_prob)
+    np.savetxt(sys.argv[4], final_phi_i)
     return
 
 if __name__ == "__main__":
