@@ -134,8 +134,7 @@ def phi_i(pdb_file, xtc_file, pairs_indexes, r_initial, boundaries, \
     pij_folded_unfolded = np.zeros(np.shape(atoms_involved))
     # pij_folded = np.zeros(np.shape(atoms_involved))
 
-    # The probability for each atom is given multiplying the probability of all\
-    # pairs with this atom.
+    # Evaluating both parts of the phi fraction for each atom/residue.
     for i, atom in enumerate(atoms_indexes):
         idx_atom = np.isin(pairs_indexes, atom).any(axis=1)
         pij_transition_unfolded[i] += \
