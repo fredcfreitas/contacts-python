@@ -1,14 +1,36 @@
 #!/usr/bin/env python3
-#usage: python3 contacts_chunk.py #PDB_BASE #XTC_FILE #FILE.count_FILE #OUTPUT
+#usage: python3 contacts_chunk.py #MODEL (CA or AA) #PDB_BASE #XTC_FILE \
+# #file.cont_FILE #OUTPUT
 
 
-#import os
 import sys
-#import time
-#import glob
 import numpy as np
-#import multiprocessing
 import mdtraj as md
+
+
+def evaluate_r_initial(contacts, model="AA"):
+    """
+    Function to evaluate initial pairwise distances accordingly the model \
+    simulated.
+    Input:
+     contacts_list - Array with the definitions from pairs section of the \
+     forcefield (TPR file.)
+     model - AA = All-Atom; CA = Carbon_alpha Coarse-Grained
+    Output:
+     r_initial - vector with the initial distance of each pair.
+    """
+    if model == "CA":
+        r_initial = np.power(np.divide(np.multiply(contacts[:, 4], 1.2), \
+                                                   contacts[:, 3]), \
+                             np.divide(1, 2))
+    elif model == "AA":
+        r_initial = np.power(np.divide(np.multiply(contacts[:, 4], 2), \
+                                                   contacts[:, 3]),\
+                             np.divide(1, 6))
+    else:
+        print("You have not provided an unimplemented model.")
+        exit()
+    return r_initial
 
 
 def evaluating_contacts_chunk(pdb_file, xtc_file, pairs_indexes, r_initial, \
@@ -41,28 +63,27 @@ def main():
 
     #cores = multiprocessing.cpu_count()
 
-    pdb_file = sys.argv[1]
+    pdb_file = sys.argv[2]
 
-    xtc_file = sys.argv[2]
+    xtc_file = sys.argv[3]
 
-    pairs_contacts = sys.argv[3]
+    pairs_contacts = sys.argv[4]
 
-    output_file = sys.argv[4]
+    output_file = sys.argv[5]
 
     contacts = np.genfromtxt(pairs_contacts)
 
     # This MUST be done due to python indexes, that starts from zero
     pairs_indexes = np.subtract(contacts[:, 0:2], 1)
 
-    r_initial = np.power(np.divide(np.multiply(contacts[:, 4], 2), contacts[:,\
-                                                           3]), np.divide(1, 6))
+    r_initial = evaluate_r_initial(contacts, model=str(sys.argv[1]))
 
     final_contacts = evaluating_contacts_chunk(pdb_file, xtc_file, \
                                                pairs_indexes, r_initial)
 
     np.savetxt(output_file, final_contacts, fmt="%d")
 
-    return
+    return 0
 
 if __name__ == "__main__":
     main()
