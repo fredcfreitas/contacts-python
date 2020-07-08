@@ -107,7 +107,7 @@ def phi_i(pdb_file, xtc_file, pairs_indexes, r_initial, boundaries, \
     n_frames = np.zeros(np.shape(boundaries)[0] + 1)
     for chunk_trajectory in md.iterload(xtc_file, top=pdb_file, chunk=chunk):
         trajectory = md.compute_distances(chunk_trajectory, pairs_indexes)
-        print((chunk_trajectory))
+        print(chunk_trajectory)
         # Getting the number of frames of each chunk and adding to the total
         n_frames[-1] += np.shape(trajectory)[0]
         below_threshold = np.less_equal(trajectory, cutoff)
