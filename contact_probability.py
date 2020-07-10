@@ -55,21 +55,25 @@ def gen_contact_probability(pdb_file, xtc_file, pairs_indexes, r_initial, \
      r_initial - Initial distance for each given pair to be used as a reference.
      threshold - Value to be used as a threshold to evaluate the contacts.
      chunk - Size of each chunk in which the trajectory will be analyzed.
-    Output: Nx3 numpy array with the contact probability for each atom/residue \
-    at each given total contacts value.
+    Output:
+     p_q_i - QxN numpy array with the contact probability at each given total \
+     contacts value for each atom/residue.
+     contacs_list - numpy 1-D (Q) array with the number of contacts.
+     atoms_list - numpy 1-D (N) array with the atoms/residues involved.
     """
 
     cutoff = np.multiply(threshold, r_initial)
-
-    results = np.zeros((np.shape(pairs_indexes)[0], np.shape(r_initial)[0]))
 
     # Correcting the numbering of atoms/residues involved.
     atoms_indexes = np.unique(pairs_indexes)
     atoms_involved = np.add(atoms_indexes, 1)
 
     # Correcting the contacts value and its correspondent index.
-    contacts_indexes = np.arange(np.shape(pairs_indexes)[0])
-    contacts_involved = np.add(contacts_indexes, 1)
+    contacts_indexes = np.arange(np.shape(pairs_indexes)[0] + 1)
+    contacts_involved = contacts_indexes
+
+    # Initiaizing the results array
+    results = np.zeros((np.shape(contacts_indexes)[0], np.shape(r_initial)[0]))
 
     # The last number of frames will store the total number for sanity check.
     n_frames = np.zeros(np.shape(contacts_indexes)[0] + 1)
@@ -98,7 +102,7 @@ def gen_contact_probability(pdb_file, xtc_file, pairs_indexes, r_initial, \
     assert np.less_equal(np.max(results), 1)
 
     # Initiaizing the P(Q,i)
-    p_q_i = np.zeros((np.shape(pairs_indexes)[0], \
+    p_q_i = np.zeros((np.shape(contacts_indexes)[0], \
                         np.shape(atoms_involved)[0]))
     # The probability for each atom is given multiplying the probability of all\
     # pairs with this atom.
@@ -110,13 +114,8 @@ def gen_contact_probability(pdb_file, xtc_file, pairs_indexes, r_initial, \
     # Sanity check of number of frames read
     assert np.less_equal(np.sum(n_frames[:-1]), n_frames[-1])
 
-    # Formatted array. First column and row are the contacts and atoms involved\
-    # respectively.
-    p_q_i_formatted = \
-    np.hstack((fromlistto1d(np.hstack((np.asarray([0]), contacts_involved))), \
-               np.vstack((atoms_involved, p_q_i))))
 
-    return p_q_i, p_q_i_formatted
+    return p_q_i, contacts_involved, atoms_involved
 
 
 def main():
@@ -130,11 +129,11 @@ def main():
 
     r_initial = evaluate_r_initial(contacts, model=str(sys.argv[1]))
 
-    raw_prob, formatted_prob = \
+    raw_prob, contacts, atoms = \
     gen_contact_probability(sys.argv[2], sys.argv[3], pairs_indexes, r_initial)
 
+
     np.savetxt("raw-" + str(sys.argv[5]), raw_prob)
-    np.savetxt("formatted-" + str(sys.argv[5]), formatted_prob)
     return 0
 
 if __name__ == "__main__":
