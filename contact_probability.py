@@ -62,7 +62,7 @@ def gen_contact_probability(pdb_file, xtc_file, pairs_indexes, r_initial, \
      atoms_list - numpy 1-D (N) array with the atoms/residues involved.
     """
 
-    cutoff = np.multiply(threshold, r_initial)
+    cutoff = np.multiply(r_initial, threshold)
 
     # Correcting the numbering of atoms/residues involved.
     atoms_indexes = np.unique(pairs_indexes)
@@ -70,9 +70,12 @@ def gen_contact_probability(pdb_file, xtc_file, pairs_indexes, r_initial, \
 
     # Correcting the contacts value and its correspondent index.
     contacts_indexes = np.arange(np.shape(pairs_indexes)[0] + 1)
-    contacts_involved = contacts_indexes
 
-    # Initiaizing the results array
+    # Initializing the contacts involved. Is expected the total number of \
+    # contacts is formed at least in the first frame.
+    contacts_involved = np.asarray([np.shape(pairs_indexes)[0]])
+
+    # Initializing the results array
     results = np.zeros((np.shape(contacts_indexes)[0], np.shape(r_initial)[0]))
 
     # The last number of frames will store the total number for sanity check.
@@ -87,28 +90,35 @@ def gen_contact_probability(pdb_file, xtc_file, pairs_indexes, r_initial, \
         num_below_threshold = np.multiply(below_threshold, 1)
         # (number of contact per timestep)
         contacts_time = np.sum(num_below_threshold, axis=1)
-        # Iterating over the number of contacts found. i-index, j-actual
-        for i, j in zip(contacts_indexes, contacts_involved):
-            idx = np.equal(contacts_time, j)
+        # Evaluating the contacts formed.
+        contacts_involved = np.unique(np.concatenate((contacts_time, \
+                                                      contacts_involved)))
+        # Iterating over the number of contacts found.
+        # n_frames receive number of frames found with Q contacts 
+        for i in contacts_indexes:
+            idx = np.equal(contacts_time, i)
             n_frames[i] += idx.sum()
             results[i] += np.sum(num_below_threshold[idx], axis=0)
 
     # To normalize all the probabilities in each dimension after all pieces are\
     # read.
-    for i in contacts_indexes:
+    for i in contacts_involved:
         results[i] = np.nan_to_num(np.divide(results[i], n_frames[i]))
 
+    # Extracting nonzero results
+    results_nz = results[contacts_involved]
+
     # Checking if all individual probabilities are normalized.
-    assert np.less_equal(np.max(results), 1)
+    assert np.less_equal(np.max(results_nz), 1)
 
     # Initiaizing the P(Q,i)
-    p_q_i = np.zeros((np.shape(contacts_indexes)[0], \
+    p_q_i = np.zeros((np.shape(contacts_involved)[0], \
                         np.shape(atoms_involved)[0]))
     # The probability for each atom is given multiplying the probability of all\
     # pairs with this atom.
     for i, atom in enumerate(atoms_indexes):
         idx_atom = np.isin(pairs_indexes, atom).any(axis=1)
-        p_q_i[:, i] += np.sum(results[:, idx_atom], axis=1)
+        p_q_i[:, i] += np.sum(results_nz[:, idx_atom], axis=1)
         # normalization over the number of contacts with each given atom/residue
         p_q_i[:, i] = np.divide(p_q_i[:, i], idx_atom.sum())
     # Sanity check of number of frames read
@@ -116,6 +126,8 @@ def gen_contact_probability(pdb_file, xtc_file, pairs_indexes, r_initial, \
 
 
     return p_q_i, contacts_involved, atoms_involved
+
+
 
 
 def main():
