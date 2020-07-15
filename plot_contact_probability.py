@@ -49,7 +49,8 @@ def plot_contact_probability(xlabel, ylabel, plot_title, datapoints, xvalues, \
     Input: One 2-D numpy array.
     """
     fig, ax = plt.subplots()
-    img = ax.imshow(datapoints, cmap=colormap, aspect='auto', origin='lower')
+    img = ax.imshow(datapoints, cmap=colormap, aspect='auto', origin='lower', \
+                    interpolation='bicubic')
     fig.colorbar(img, ax=ax, orientation='vertical', label=colorbar_label)
     ax.set_title(str(plot_title))
     ax.set_ylabel(str(ylabel))
@@ -62,4 +63,4 @@ def plot_contact_probability(xlabel, ylabel, plot_title, datapoints, xvalues, \
         plt.savefig("plot_" + str(format_output_name(plot_title)) + ".png",\
                     format="png", dpi=300)
     plt.show()
-    return
+    pass
