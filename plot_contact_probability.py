@@ -8,7 +8,7 @@ def getspacedelements(input_vector, num=4):
     """Function to return #num elements from an 1D array, evenly distributed if\
     possible.
     Input: 1-D list, #num of elements.
-    Ouput: 1-D list with #num elements.
+    Output: 1-D list with #num elements.
     """
     out = input_vector[np.round(np.linspace(0, len(input_vector)-1, \
                                                              num)).astype(int)]
@@ -30,6 +30,16 @@ def customize_axis_ticks(old_label, num=4):
     location = np.arange(np.shape(old_label)[0])[idx]
     return location, chosen
 
+def format_output_name(input_string):
+    """Function to get a string and format it if it is necessary"""
+    split_string = str(input_string).split()
+    if np.less_equal(np.size(split_string), 1):
+        output = split_string
+    else:
+        two_firsts = split_string[0] + "-" + split_string[1]
+        output = two_firsts
+    return output
+
 
 def plot_contact_probability(xlabel, ylabel, plot_title, datapoints, xvalues, \
                              num_xticks, yvalues, num_yticks, colorbar_label, \
@@ -49,6 +59,7 @@ def plot_contact_probability(xlabel, ylabel, plot_title, datapoints, xvalues, \
     y_ax_idx, y_ax_ticks = customize_axis_ticks(yvalues, num_yticks)
     plt.yticks(y_ax_idx, y_ax_ticks.astype(int))
     if saveit:
-        plt.savefig("plot_" + str(plot_title) + ".png", format="png", dpi=300)
+        plt.savefig("plot_" + str(format_output_name(plot_title)) + ".png",\
+                    format="png", dpi=300)
     plt.show()
     return
