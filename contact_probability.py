@@ -94,7 +94,7 @@ def gen_contact_probability(pdb_file, xtc_file, pairs_indexes, r_initial, \
         contacts_involved = np.unique(np.concatenate((contacts_time, \
                                                       contacts_involved)))
         # Iterating over the number of contacts found.
-        # n_frames receive number of frames found with Q contacts 
+        # n_frames receive number of frames found with Q contacts
         for i in contacts_indexes:
             idx = np.equal(contacts_time, i)
             n_frames[i] += idx.sum()
@@ -124,10 +124,7 @@ def gen_contact_probability(pdb_file, xtc_file, pairs_indexes, r_initial, \
     # Sanity check of number of frames read
     assert np.less_equal(np.sum(n_frames[:-1]), n_frames[-1])
 
-
     return p_q_i, contacts_involved, atoms_involved
-
-
 
 
 def main():
@@ -144,8 +141,14 @@ def main():
     raw_prob, contacts, atoms = \
     gen_contact_probability(sys.argv[2], sys.argv[3], pairs_indexes, r_initial)
 
-
     np.savetxt("raw-" + str(sys.argv[5]), raw_prob)
+
+    np.savetxt("Q-involved-"+ str(sys.argv[5]), contacts_involved,
+               newline="\n", header="# contacts involved", fmt="%d")
+
+    np.savetxt("atoms-involved-"+ str(sys.argv[5]), contacts_involved, \
+               newline="\n", header="# contacts involved", fmt="%d")
+
     return 0
 
 if __name__ == "__main__":
