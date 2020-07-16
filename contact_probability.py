@@ -120,7 +120,7 @@ def gen_contact_probability(pdb_file, xtc_file, pairs_indexes, r_initial, \
         idx_atom = np.isin(pairs_indexes, atom).any(axis=1)
         p_q_i[:, i] += np.sum(results_nz[:, idx_atom], axis=1)
         # normalization over the number of contacts with each given atom/residue
-        p_q_i[:, i] = np.divide(p_q_i[:, i], idx_atom.sum())
+        p_q_i[:, i] = np.nan_to_num(np.divide(p_q_i[:, i], idx_atom.sum()))
     # Sanity check of number of frames read
     assert np.less_equal(np.sum(n_frames[:-1]), n_frames[-1])
 

@@ -14,6 +14,7 @@ def getspacedelements(input_vector, num=4):
                                                              num)).astype(int)]
     return out
 
+
 def customize_axis_ticks(old_label, num=4):
     """
     Function to return the new labels and their respective positions.
@@ -29,6 +30,7 @@ def customize_axis_ticks(old_label, num=4):
     idx = np.isin(old_label, chosen)
     location = np.arange(np.shape(old_label)[0])[idx]
     return location, chosen
+
 
 def format_output_name(input_string):
     """Function to get a string and format it if it is necessary"""
