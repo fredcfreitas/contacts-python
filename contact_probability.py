@@ -143,10 +143,10 @@ def main():
 
     np.savetxt("raw-" + str(sys.argv[5]), raw_prob)
 
-    np.savetxt("Q-involved-"+ str(sys.argv[5]), contacts_involved,
+    np.savetxt("Q-involved-"+ str(sys.argv[5]), contacts,
                newline="\n", header="# contacts involved", fmt="%d")
 
-    np.savetxt("atoms-involved-"+ str(sys.argv[5]), contacts_involved, \
+    np.savetxt("atoms-involved-"+ str(sys.argv[5]), atoms, \
                newline="\n", header="# contacts involved", fmt="%d")
 
     return 0
