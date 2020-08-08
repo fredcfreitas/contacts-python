@@ -1,14 +1,20 @@
 #!/usr/bin/env python3
-#usage: python3 contacts_chunk.py #MODEL (CA or AA) #PDB_BASE #XTC_FILE \
-# #file.cont_FILE #OUTPUT
-
+#
+################################################################################
+# Script to calculate contacts from *.xtc gromacs files using mdtraj library   #
+# To better results, use the topology file given by SMOG or SMOG2 (*.gro)      #
+################################################################################
+#
+#USAGE: python3 contacts_chunk.py #MODEL (CA or AA) #PDB_BASE #XTC_FILE \
+# #file.cont_FILE #OUTPUT_filename
+# file.cont is the GROMACS forcefield pairs section (SMOG-like)
 
 import sys
 import numpy as np
 import mdtraj as md
 
 
-def evaluate_r_initial(contacts, model="AA"):
+def evaluate_r_initial(contacts, model="AA", precision=np.double):
     """
     Function to evaluate initial pairwise distances accordingly the model \
     simulated.
@@ -19,6 +25,7 @@ def evaluate_r_initial(contacts, model="AA"):
     Output:
      r_initial - vector with the initial distance of each pair.
     """
+    contacts = np.asarray(contacts, dtype=precision)
     if model == "CA":
         r_initial = np.power(np.divide(np.multiply(contacts[:, 4], 1.2), \
                                                    contacts[:, 3]), \
