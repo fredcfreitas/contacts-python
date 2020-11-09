@@ -75,7 +75,7 @@ def fromlistto1d(inputlist):
     vector.
     """
     inputlist = np.asarray(inputlist)
-    return np.reshape(inputlist, (np.shape(inputlist)[0], 1))
+    return inputlist.reshape(-1, 1)
 
 
 def phi_i(pdb_file, xtc_file, pairs_indexes, r_initial, boundaries, \
