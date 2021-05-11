@@ -13,6 +13,12 @@ import sys
 import numpy as np
 import mdtraj as md
 
+# Threshold to be used to consider a native contact when comparing the distances
+THRESHOLD = 1.5
+
+# Number of frames to be read at a time
+CHUNK = 10000
+
 
 def evaluate_r_initial(contacts, model="AA", precision=np.double):
     """
@@ -36,7 +42,7 @@ def evaluate_r_initial(contacts, model="AA", precision=np.double):
                              np.divide(1, 6))
     else:
         print("You have not provided an unimplemented model.")
-        exit()
+        sys.exit()
     return r_initial
 
 
@@ -86,7 +92,9 @@ def main():
     r_initial = evaluate_r_initial(contacts, model=str(sys.argv[1]))
 
     final_contacts = evaluating_contacts_chunk(pdb_file, xtc_file, \
-                                               pairs_indexes, r_initial)
+                                               pairs_indexes, r_initial,\
+                                               threshold=THRESHOLD, \
+                                               chunk=CHUNK)
 
     np.savetxt(output_file, final_contacts, fmt="%d")
 
