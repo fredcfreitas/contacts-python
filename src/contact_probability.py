@@ -147,7 +147,7 @@ def main():
                newline="\n", header="# contacts involved", fmt="%d")
 
     np.savetxt("atoms-involved-"+ str(sys.argv[5]), atoms, \
-               newline="\n", header="# contacts involved", fmt="%d")
+               newline="\n", header="# atoms involved", fmt="%d")
 
     return 0
 
