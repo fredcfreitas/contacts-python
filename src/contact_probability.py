@@ -39,7 +39,8 @@ def fromlistto1d(inputlist):
     vector.
     """
     inputlist = np.asarray(inputlist)
-    return np.reshape(inputlist, (np.shape(inputlist)[0], 1))
+    return inputlist.reshape(-1, 1)
+
 
 
 def gen_contact_probability(pdb_file, xtc_file, pairs_indexes, r_initial, \
@@ -147,7 +148,7 @@ def main():
                newline="\n", header="# contacts involved", fmt="%d")
 
     np.savetxt("atoms-involved-"+ str(sys.argv[5]), atoms, \
-               newline="\n", header="# contacts involved", fmt="%d")
+               newline="\n", header="# atoms involved", fmt="%d")
 
     return 0
 
