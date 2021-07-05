@@ -19,6 +19,8 @@ THRESHOLD = 1.5
 # Number of frames to be read at a time
 CHUNK = 10000
 
+# Skip every STRIDE frames when analyzing
+STRIDE = 1
 
 def evaluate_r_initial(contacts, model="AA", precision=np.double):
     """
@@ -47,7 +49,7 @@ def evaluate_r_initial(contacts, model="AA", precision=np.double):
 
 
 def evaluating_contacts_chunk(pdb_file, xtc_file, pairs_indexes, r_initial, \
-                              threshold=1.5, chunk=10000):
+                              threshold=1.5, chunk=10000, stride=1):
     """
     Function to evaluate the number of contacts for each given timestep.
     Input:
@@ -70,7 +72,7 @@ def evaluating_contacts_chunk(pdb_file, xtc_file, pairs_indexes, r_initial, \
                                                            threshold)), axis=1))
 
     contacts = np.concatenate((contacts))
-    return contacts
+    return contacts[::stride]
 
 def main():
 
@@ -94,7 +96,7 @@ def main():
     final_contacts = evaluating_contacts_chunk(pdb_file, xtc_file, \
                                                pairs_indexes, r_initial,\
                                                threshold=THRESHOLD, \
-                                               chunk=CHUNK)
+                                               chunk=CHUNK, stride=STRIDE)
 
     np.savetxt(output_file, final_contacts, fmt="%d")
 
