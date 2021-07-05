@@ -42,6 +42,7 @@ def fromlistto1d(inputlist):
     return inputlist.reshape(-1, 1)
 
 
+
 def gen_contact_probability(pdb_file, xtc_file, pairs_indexes, r_initial, \
                             threshold=1.5, chunk=10000):
     """
