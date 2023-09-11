@@ -1,0 +1,5 @@
+matplotlib
+mdtraj
+numpy
+pytest
+py2nb
