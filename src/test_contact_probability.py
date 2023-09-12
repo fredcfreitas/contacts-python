@@ -21,10 +21,10 @@ def test_evaluate_r_initial():#pairs_section, initial_distances):
     Output:
      r_initial - vector with the initial distance of each pair.
     """
-    pairs_section_filepath = '../share/ci2-AA-contacts.dat'
+    pairs_section_filepath = 'share/ci2-AA-contacts.dat'
     pairs_section = np.genfromtxt(pairs_section_filepath)
     pairs_indexes = np.subtract(pairs_section[:, 0:2], 1)
-    pdb_file = '../share/ci2-adjusted.pdb'
+    pdb_file = 'share/ci2-adjusted.pdb'
     pdb_loaded = md.load(pdb_file)
     initial_distances = md.compute_distances(pdb_loaded, pairs_indexes)
     r_initial = cp.evaluate_r_initial(pairs_section)
