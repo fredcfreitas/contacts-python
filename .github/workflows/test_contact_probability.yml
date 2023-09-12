@@ -43,6 +43,13 @@ jobs:
       - name: Test with pytest
         run: |
           pytest
+
+    steps:
+      - uses: actions/checkout@v3
+      # Make sure the @v0.7.0 matches the current version of the action
+      - uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
       
       - name: Creating the Jupyter Notebook
         run: |
@@ -59,7 +66,8 @@ jobs:
         uses: ad-m/github-push-action@master
         with:
           ssh: true
+          ssh-private-key: ${{ secrets.PAT_TOKEN }}
 #          github_token: ${{ secrets.GITHUB_TOKEN }}
-          github_token: ${{ secrets.PAT_TOKEN }}
+          ssh_key: ${{ secrets.PAT_TOKEN }}
           branch: ${{ github.ref }}
           force: true
