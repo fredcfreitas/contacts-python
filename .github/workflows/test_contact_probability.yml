@@ -44,7 +44,6 @@ jobs:
         run: |
           pytest
 
-    steps:
       - uses: actions/checkout@v3
       # Make sure the @v0.7.0 matches the current version of the action
       - uses: webfactory/ssh-agent@v0.7.0
