@@ -68,9 +68,9 @@ jobs:
         uses: ad-m/github-push-action@master
         with:
           ssh: true
-          ssh-private-key: ${{ secrets.PAT_TOKEN }}
+#          ssh-private-key: ${{ secrets.PAT_TOKEN }}
 #          github_token: ${{ secrets.GITHUB_TOKEN }}
-          ssh_key: ${{ secrets.PAT_TOKEN }}
+#          ssh_key: ${{ secrets.PAT_TOKEN }}
           github_token: ${{ secrets.PAT_TOKEN }}
           branch: ${{ github.ref }}
           force: true
