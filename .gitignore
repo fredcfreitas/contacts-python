@@ -1,5 +1,8 @@
 # gitignore file created by fredcfreitas using gitignore.io
 
+# ignore links created to test the code
+share/contact_probability.py
+
 ### JupyterNotebooks ###
 # gitignore template for Jupyter Notebooks
 # website: http://jupyter.org/
