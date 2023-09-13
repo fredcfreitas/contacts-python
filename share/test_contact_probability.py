@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
-# usage: python3 contact_probability.py #MODEL(AA or CA) #PDB_BASE #XTC_FILE \
-# #file.cont_FILE #OUTPUT
+# usage: pylint
 
-import sys
-import contact_probability as cp
+#import sys
 import numpy as np
 import mdtraj as md
-
+import contact_probability as cp
 
 
 
@@ -21,6 +19,7 @@ def test_evaluate_r_initial():#pairs_section, initial_distances):
     Output:
      r_initial - vector with the initial distance of each pair.
     """
+    threshold_distances = 0.001
     pairs_section_filepath = 'share/ci2-AA-contacts.dat'
     pairs_section = np.genfromtxt(pairs_section_filepath)
     pairs_indexes = np.subtract(pairs_section[:, 0:2], 1)
@@ -28,9 +27,35 @@ def test_evaluate_r_initial():#pairs_section, initial_distances):
     pdb_loaded = md.load(pdb_file)
     initial_distances = md.compute_distances(pdb_loaded, pairs_indexes)
     r_initial = cp.evaluate_r_initial(pairs_section)
-    test = (np.subtract(r_initial, initial_distances) < 0.001).all()
+    test = (np.subtract(r_initial, \
+        initial_distances) <= threshold_distances).all()
     assert test
 
-
-#raw_prob, contacts, atoms = gen_contact_probability('ci2-AA-EM-end.gro', 'ci2-AA-120-run.xtc', pairs_indexes, r_initial)
-
+def test_gen_contact_probability():
+    """
+    Function to test the gen_contact_probability if below given thresholds.
+    """
+    threshold_prob = 0.01
+    threshold_contacts = 0
+    threshold_atoms = 0
+    pairs_section_filepath = 'share/ci2-AA-contacts.dat'
+    pairs_section = np.genfromtxt(pairs_section_filepath)
+    r_initial = cp.evaluate_r_initial(pairs_section)
+    pairs_indexes = np.subtract(pairs_section[:, 0:2], 1)
+    defined_raw_output = np.genfromtxt('share/raw-output-ci2.dat')
+    defined_atoms_involved = \
+        np.genfromtxt('share/atoms-involved-output-ci2.dat')
+    defined_contacts_involved = \
+        np.genfromtxt('share/Q-involved-output-ci2.dat')
+    raw_prob, contacts, atoms = cp.gen_contact_probability(
+        'share/ci2-AA-120-run.gro', 'share/ci2-AA-120-run.xtc',
+        pairs_indexes, r_initial
+        )
+    test_raw = (np.subtract(raw_prob, \
+        defined_raw_output) <= threshold_prob).all()
+    test_contacts = (np.subtract(contacts, \
+        defined_contacts_involved) <= threshold_contacts).all()
+    test_atoms = (np.subtract(atoms, \
+        defined_atoms_involved) <= threshold_atoms).all()
+    test = test_raw and test_contacts and test_atoms
+    assert test
