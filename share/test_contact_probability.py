@@ -5,7 +5,7 @@
 import numpy as np
 import mdtraj as md
 import contact_probability as cp
-
+import contacts_chunk as cc
 
 
 def test_evaluate_r_initial():#pairs_section, initial_distances):
@@ -58,4 +58,21 @@ def test_gen_contact_probability():
     test_atoms = (np.subtract(atoms, \
         defined_atoms_involved) <= threshold_atoms).all()
     test = test_raw and test_contacts and test_atoms
+    assert test
+
+
+def test_contacts_chunk():
+    """
+    Function to test if contacts chunk is correct within the error margin.
+    """
+    error_margin_contacts = 1
+    pairs_section_filepath = 'share/ci2-AA-contacts.dat'
+    pairs_section = np.genfromtxt(pairs_section_filepath)
+    r_initial = cp.evaluate_r_initial(pairs_section)
+    pairs_indexes = np.subtract(pairs_section[:, 0:2], 1)
+    defined_contacts_output = np.genfromtxt('share/contacts-output-ci2.dat')
+    contacts = cc.evaluating_contacts_chunk('share/ci2-adjusted.pdb', \
+        'share/ci2-AA-120-run.xtc', pairs_indexes, r_initial)
+    test = (np.absolute(np.subtract(contacts, defined_contacts_output))\
+            <= error_margin_contacts).all()
     assert test
