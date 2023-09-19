@@ -44,6 +44,7 @@ jobs:
       - name: Test with pytest
         run: |
           ln -s ../src/contact_probability.py share/
+          ln -s ../src/contacts_chunk.py share/
           pytest
 
       - uses: actions/checkout@v3
