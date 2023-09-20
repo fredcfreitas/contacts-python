@@ -2,6 +2,8 @@
 
 # ignore links created to test the code
 share/contact_probability.py
+share/contacts_chunk.py
+
 
 ### JupyterNotebooks ###
 # gitignore template for Jupyter Notebooks
