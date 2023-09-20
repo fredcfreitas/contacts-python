@@ -27,8 +27,8 @@ def test_evaluate_r_initial():#pairs_section, initial_distances):
     pdb_loaded = md.load(pdb_file)
     initial_distances = md.compute_distances(pdb_loaded, pairs_indexes)
     r_initial = cp.evaluate_r_initial(pairs_section)
-    test = (np.subtract(r_initial, \
-        initial_distances) <= threshold_distances).all()
+    test = np.less_equal(np.absolute(np.subtract(r_initial, \
+        initial_distances)), threshold_distances).all()
     assert test
 
 def test_gen_contact_probability():
@@ -51,12 +51,12 @@ def test_gen_contact_probability():
         'share/ci2-AA-120-run.gro', 'share/ci2-AA-120-run.xtc',
         pairs_indexes, r_initial
         )
-    test_raw = (np.subtract(raw_prob, \
-        defined_raw_output) <= threshold_prob).all()
-    test_contacts = (np.subtract(contacts, \
-        defined_contacts_involved) <= threshold_contacts).all()
-    test_atoms = (np.subtract(atoms, \
-        defined_atoms_involved) <= threshold_atoms).all()
+    test_raw = np.less_equal(np.absolute(np.subtract(raw_prob, \
+        defined_raw_output)), threshold_prob).all()
+    test_contacts = np.less_equal(np.absolute(np.subtract(contacts, \
+        defined_contacts_involved)), threshold_contacts).all()
+    test_atoms = np.less_equal(np.absolute(np.subtract(atoms, \
+        defined_atoms_involved)), threshold_atoms).all()
     test = test_raw and test_contacts and test_atoms
     assert test
 
@@ -73,6 +73,6 @@ def test_contacts_chunk():
     defined_contacts_output = np.genfromtxt('share/contacts-output-ci2.dat')
     contacts = cc.evaluating_contacts_chunk('share/ci2-adjusted.pdb', \
         'share/ci2-AA-120-run.xtc', pairs_indexes, r_initial)
-    test = (np.absolute(np.subtract(contacts, defined_contacts_output))\
-            <= error_margin_contacts).all()
+    test = np.less_equal(np.absolute(np.subtract(contacts,\
+        defined_contacts_output)), error_margin_contacts).all()
     assert test
