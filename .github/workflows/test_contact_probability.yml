@@ -53,7 +53,7 @@ jobs:
       - uses: webfactory/ssh-agent@v0.7.0
         with:
           ssh-private-key: ${{ secrets.PAT_TOKEN }}
-          github_token: ${{ secrets.PAT_TOKEN }}
+#          github_token: ${{ secrets.PAT_TOKEN }}
       
       - name: Creating the Jupyter Notebook
         run: |
@@ -72,6 +72,6 @@ jobs:
           ssh: true
           ssh-private-key: ${{ secrets.PAT_TOKEN }}
           ssh_key: ${{ secrets.PAT_TOKEN }}
-          github_token: ${{ secrets.PAT_TOKEN }}
+#          github_token: ${{ secrets.PAT_TOKEN }}
           branch: ${{ github.ref }}
           force: true
