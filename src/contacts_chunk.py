@@ -36,15 +36,15 @@ def evaluate_r_initial(contacts, model="AA", precision=np.double):
     """
     contacts = np.asarray(contacts, dtype=precision)
     if model == "CA":
-        r_initial = np.power(np.divide(np.multiply(contacts[:, 4], 1.2), \
-                                                   contacts[:, 3]), \
+        r_initial = np.power(np.divide(np.multiply(contacts[:, -1], 1.2), \
+                                                   contacts[:, -2]), \
                              np.divide(1, 2))
     elif model == "AA":
-        r_initial = np.power(np.divide(np.multiply(contacts[:, 4], 2), \
-                                                   contacts[:, 3]),\
+        r_initial = np.power(np.divide(np.multiply(contacts[:, -1], 2), \
+                                                   contacts[:, -2]),\
                              np.divide(1, 6))
     else:
-        print("You have not provided an unimplemented model.")
+        print("You have not provided a model.")
         sys.exit()
     return r_initial
 

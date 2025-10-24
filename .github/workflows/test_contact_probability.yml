@@ -12,6 +12,7 @@ on: [push]
 #permissions:
 #  contents: read
 #
+
 jobs:
   build:
 
@@ -51,13 +52,13 @@ jobs:
       # Make sure the @v0.7.0 matches the current version of the action
       - uses: webfactory/ssh-agent@v0.7.0
         with:
-          ssh-private-key: ${{ secrets.PAT_TOKEN }}
+          ssh-private-key: ${{ secrets.PAT_TOKEN }} -C "git@github.com:fredcfreitas/contacts-python"
 #          github_token: ${{ secrets.PAT_TOKEN }}
       
       - name: Creating the Jupyter Notebook
         run: |
           py2nb src/contact_probability.py
-      - name: Commiting generated files # 
+      - name: Committing generated files # 
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
@@ -69,9 +70,8 @@ jobs:
         uses: ad-m/github-push-action@master
         with:
           ssh: true
-          ssh-private-key: ${{ secrets.PAT_TOKEN }}
-#          github_token: ${{ secrets.GITHUB_TOKEN }}
+          ssh-private-key: ${{ secrets.PAT_TOKEN }} -C "git@github.com:fredcfreitas/contacts-python"
           ssh_key: ${{ secrets.PAT_TOKEN }}
-          github_token: ${{ secrets.PAT_TOKEN }}
+#          github_token: ${{ secrets.PAT_TOKEN }}
           branch: ${{ github.ref }}
           force: true
