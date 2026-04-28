@@ -47,7 +47,23 @@ jobs:
           ln -s ../src/contact_probability.py share/
           ln -s ../src/contacts_chunk.py share/
           pytest
-
+on: 
+  push:
+    paths:
+      - 'src/**' # Triggers on changes within the 'src' directory and its subdirectories
+  pull_request:
+    paths:
+      - 'src/**'
+jobs:
+  build:
+# building the environment
+    runs-on: ubuntu-latest
+    if: github.event.head_commit.message != 'Updating the notebooks according last script(s) changes'
+    strategy:
+      matrix:
+        python-version: [3.9]
+        
+    steps:
       - uses: actions/checkout@v3
       # Make sure the @v0.7.0 matches the current version of the action
       - uses: webfactory/ssh-agent@v0.7.0
