@@ -48,5 +48,4 @@ jobs:
           ln -s ../src/contacts_chunk.py share/
           pytest
 
-          branch: ${{ github.ref }}
-          force: true
+
