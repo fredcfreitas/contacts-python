@@ -48,30 +48,4 @@ jobs:
           ln -s ../src/contacts_chunk.py share/
           pytest
 
-      - uses: actions/checkout@v6
-      # Make sure the @v0.9.0 matches the current version of the action
-      - uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.PAT_TOKEN }} -C "git@github.com:fredcfreitas/contacts-python"
-#          github_token: ${{ secrets.PAT_TOKEN }}
-      
-      - name: Creating the Jupyter Notebook
-        run: |
-          py2nb src/contact_probability.py
-      - name: Committing generated files # 
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git config --local url."git@github.com:".insteadOf "https://github.com/"
-          git add .
-          git commit -m "Updating the notebooks according last script(s) changes"
-#          git push
-      - name: Push changes # 
-        uses: ad-m/github-push-action@master
-        with:
-          ssh: true
-          ssh-private-key: ${{ secrets.PAT_TOKEN }} -C "git@github.com:fredcfreitas/contacts-python"
-          ssh_key: ${{ secrets.PAT_TOKEN }}
-#          github_token: ${{ secrets.PAT_TOKEN }}
-          branch: ${{ github.ref }}
-          force: true
+
