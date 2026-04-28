@@ -82,8 +82,6 @@ def plot_contact_probability(name, xlabel, ylabel, plot_title, datapoints, \
     pass
 
 
-
-
 def plot_three_aside_one_colorbar(datapoints_1, xvalues_1, yvalues_1, datapoints_2, xvalues_2, yvalues_2, datapoints_3, xvalues_3, yvalues_3, x_label, y_label, colorbar_label, fig_name,  num_xticks = 5, num_yticks = 8, colormap="rainbow"):
     """
     Function to plot three graphs with the same y and x axis and same colorbar \
