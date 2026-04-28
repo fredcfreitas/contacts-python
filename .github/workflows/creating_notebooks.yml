@@ -26,7 +26,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}     
           
-    steps:
       - uses: actions/checkout@v6
       # Make sure the @v0.9.0 matches the current version of the action
       - uses: webfactory/ssh-agent@v0.9.0
