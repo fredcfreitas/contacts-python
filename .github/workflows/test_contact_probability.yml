@@ -23,9 +23,9 @@ jobs:
         python-version: [3.9]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -48,9 +48,9 @@ jobs:
           ln -s ../src/contacts_chunk.py share/
           pytest
 
-      - uses: actions/checkout@v3
-      # Make sure the @v0.7.0 matches the current version of the action
-      - uses: webfactory/ssh-agent@v0.7.0
+      - uses: actions/checkout@v6
+      # Make sure the @v0.9.0 matches the current version of the action
+      - uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.PAT_TOKEN }} -C "git@github.com:fredcfreitas/contacts-python"
 #          github_token: ${{ secrets.PAT_TOKEN }}
