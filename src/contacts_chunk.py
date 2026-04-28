@@ -13,6 +13,7 @@ import sys
 import numpy as np
 import mdtraj as md
 
+
 # Threshold to be used to consider a native contact when comparing the distances
 THRESHOLD = 1.5
 
