@@ -1,0 +1,61 @@
+# This workflow will install Python dependencies, run tests and lint with a single version of Python
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+
+name: Creating notebooks
+
+on: 
+  push:
+    paths:
+      - 'src/**' # Triggers on changes within the 'src' directory and its subdirectories
+  pull_request:
+    paths:
+      - 'src/**'
+jobs:
+  build:
+# building the environment
+    runs-on: ubuntu-latest
+    if: github.event.head_commit.message != 'Updating the notebooks according last script(s) changes'
+    strategy:
+      matrix:
+        python-version: [3.9]
+    
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}     
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 pytest
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - uses: actions/checkout@v6
+      # Make sure the @v0.9.0 matches the current version of the action
+      - uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.PAT_TOKEN }} -C "git@github.com:fredcfreitas/contacts-python"
+#          github_token: ${{ secrets.PAT_TOKEN }}
+      
+      - name: Creating the Jupyter Notebook
+        run: |
+          py2nb src/contact_probability.py
+      - name: Committing generated files # 
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git config --local url."git@github.com:".insteadOf "https://github.com/"
+          git add .
+          git commit -m "Updating the notebooks according last script(s) changes"
+#          git push
+      - name: Push changes # 
+        uses: ad-m/github-push-action@master
+        with:
+          ssh: true
+          ssh-private-key: ${{ secrets.PAT_TOKEN }} -C "git@github.com:fredcfreitas/contacts-python"
+          ssh_key: ${{ secrets.PAT_TOKEN }}
+#          github_token: ${{ secrets.PAT_TOKEN }}
+          branch: ${{ github.ref }}
+          force: true
