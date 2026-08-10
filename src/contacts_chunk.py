@@ -23,6 +23,9 @@ CHUNK = 10000
 # Skip every STRIDE frames when analyzing
 STRIDE = 1
 
+def evaluate_r_from_pdb(contacts, model="AA", precision=np.double):
+    pass
+
 def evaluate_r_initial(contacts, model="AA", precision=np.double):
     """
     Function to evaluate initial pairwise distances accordingly the model \
