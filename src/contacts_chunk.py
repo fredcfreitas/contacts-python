@@ -92,7 +92,14 @@ def main():
     # This MUST be done due to python indexes, that starts from zero
     pairs_indexes = np.subtract(contacts[:, 0:2], 1)
 
-    r_initial = evaluate_r_initial(contacts, model=str(sys.argv[1]))
+    if np.shape(contacts)[1] > 2:
+        print(f"File.cont file given with Lennard-Jones coefficients and will be used to extract the initial distances")
+        r_initial = evaluate_r_initial(contacts, model=str(sys.argv[1]))
+    elif:
+        print(f"File.cont file given only with list of contacts. Distances will be determined by pdb_base file named " + str(pdb_file) + f".")
+        r_initial = evaluate_r_from_pdb(contacts, model=str(sys.argv[1]))
+    else:
+        print(f"File.cont file given has an issue.")
 
     final_contacts = evaluating_contacts_chunk(pdb_file, xtc_file, \
                                                pairs_indexes, r_initial,\
