@@ -26,7 +26,7 @@ def test_evaluate_r_from_pdb():
     pdb_file = 'share/ci2-adjusted.pdb'
     pdb_loaded = md.load(pdb_file)
     initial_distances = md.compute_distances(pdb_loaded, pairs_indexes)
-    r_initial = cc.evaluate_r_from_pdb(pairs_section, pdb_file)
+    r_initial = cc.evaluate_r_from_pdb(pairs_indexes, pdb_file)
     test = np.less_equal(np.absolute(np.subtract(r_initial, \
         initial_distances)), threshold_distances).all()
     assert test
