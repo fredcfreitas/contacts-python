@@ -23,16 +23,32 @@ CHUNK = 10000
 # Skip every STRIDE frames when analyzing
 STRIDE = 1
 
-def evaluate_r_from_pdb(contacts, model="AA", precision=np.double):
-    pass
+def evaluate_r_from_pdb(contacts_list, reference_model, precision=np.double):
+    """
+    Function to evaluate initial pairwise distances accordingly the model \
+    simulated.
+    Input:
+     contacts_list - Array with the definitions from pairs section of the \
+     forcefield corrected to python indexing.
+     reference_model - string filepath for the structure to be used as reference (PDB or GRO preferred). 
+    Output:
+     r_initial - vector with the initial distance of each pair.
+    """
+    contacts_list = np.asarray(contacts_list, dtype=precision)[:, :2]
+    # Loading the reference model
+    initial_structure = md.load(reference_model)
+    # Calculating the initial distances between pairs
+    r_initial = md.compute_distances(initial_structure, contacts_list)
+    return r_initial
+
 
 def evaluate_r_initial(contacts, model="AA", precision=np.double):
     """
     Function to evaluate initial pairwise distances accordingly the model \
     simulated.
     Input:
-     contacts_list - Array with the definitions from pairs section of the \
-     forcefield (TPR file.)
+     contacts - Array with the definitions from pairs section of the \
+     forcefield (TPR file).
      model - AA = All-Atom; CA = Carbon_alpha Coarse-Grained
     Output:
      r_initial - vector with the initial distance of each pair.
@@ -96,13 +112,13 @@ def main():
     pairs_indexes = np.subtract(contacts[:, 0:2], 1)
 
     if np.shape(contacts)[1] > 2:
-        print(f"File.cont file given with Lennard-Jones coefficients and will be used to extract the initial distances")
+        print("File.cont file was given with Lennard-Jones coefficients and will be used to extract the initial distances")
         r_initial = evaluate_r_initial(contacts, model=str(sys.argv[1]))
-    elif:
-        print(f"File.cont file given only with list of contacts. Distances will be determined by pdb_base file named " + str(pdb_file) + f".")
-        r_initial = evaluate_r_from_pdb(contacts, model=str(sys.argv[1]))
+    elif np.shape(contacts)[1] == 2:
+        print("File.cont file was given only with list of contacts. Distances will be determined by pdb_base file named " + str(pdb_file) + ".")
+        r_initial = evaluate_r_from_pdb(pairs_indexes, pdb_file)
     else:
-        print(f"File.cont file given has an issue.")
+        print("File.cont file given has an issue.")
 
     final_contacts = evaluating_contacts_chunk(pdb_file, xtc_file, \
                                                pairs_indexes, r_initial,\
