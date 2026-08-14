@@ -22,10 +22,10 @@ def test_evaluate_r_initial():#pairs_section, initial_distances):
     threshold_distances = 0.001
     pairs_section_filepath = 'share/ci2-AA-contacts.dat'
     pairs_section = np.genfromtxt(pairs_section_filepath)
-    pairs_indexes = np.subtract(pairs_section[:, 0:2], 1)
+    pairs_indexes = np.subtract(pairs_section[:, 0:2], 1).astype(int)
     pdb_file = 'share/ci2-adjusted.pdb'
     pdb_loaded = md.load(pdb_file)
-    initial_distances = md.compute_distances(pdb_loaded, pairs_indexes)
+    initial_distances = np.linalg.norm(pdb_loaded.xyz[0][pairs_indexes[:, 0]] - pdb_loaded.xyz[0][pairs_indexes[:, 1]], axis=1)
     r_initial = cp.evaluate_r_initial(pairs_section)
     test = np.less_equal(np.absolute(np.subtract(r_initial, \
         initial_distances)), threshold_distances).all()
