@@ -25,11 +25,11 @@ STRIDE = 1
 
 def evaluate_r_from_pdb(contacts_list, reference_model, precision=np.double):
     """
-    Function to evaluate initial pairwise distances accordingly the model \
+    Function to evaluate initial pairwise distances according to the model \
     simulated.
     Input:
-     contacts_list - Array with the definitions from pairs section of the \
-     forcefield corrected to python indexing.
+     contacts_list - Array with the definitions from the pairs section of the \
+     forcefield corrected to Python indexing.
      reference_model - string filepath for the structure to be used as reference (PDB or GRO preferred). 
     Output:
      r_initial - vector with the initial distance of each pair.
@@ -44,7 +44,7 @@ def evaluate_r_from_pdb(contacts_list, reference_model, precision=np.double):
 
 def evaluate_r_initial(contacts, model="AA", precision=np.double):
     """
-    Function to evaluate initial pairwise distances accordingly the model \
+    Function to evaluate initial pairwise distances according to the model \
     simulated.
     Input:
      contacts - Array with the definitions from pairs section of the \
@@ -71,17 +71,17 @@ def evaluate_r_initial(contacts, model="AA", precision=np.double):
 def evaluating_contacts_chunk(pdb_file, xtc_file, pairs_indexes, r_initial, \
                               threshold=1.5, chunk=10000, stride=1):
     """
-    Function to evaluate the number of contacts for each given timestep.
+    Function to evaluate the number of contacts for each given time step.
     Input:
-     pdb_file - File with your structure (PDB or GRO files for instance).
+     pdb_file - File with your structure (PDB or GRO files, for instance).
      xtc_file - Trajectory.
-     pairs_indexes - Numpy array Nx2 with the pairs to be used to evaluate \
+     pairs_indexes - NumPy array Nx2 with the pairs to be used to evaluate \
      the contacts. (The first two columns of the pairs section in the TPR file \
      without the header).
      r_initial - Initial distance for each given pair to be used as a reference.
      threshold - Value to be used as a threshold to evaluate the contacts.
      chunk - Size of each chunk in which the trajectory will be analyzed.
-    Output: Nx1 numpy array with the total number of contacts for each \
+    Output: Nx1 NumPy array with the total number of contacts for each \
      timestep.
     """
     contacts = []
@@ -108,7 +108,7 @@ def main():
 
     contacts = np.genfromtxt(pairs_contacts)
 
-    # This MUST be done due to python indexes, that starts from zero
+    # This MUST be done due to Python indexes, which start from zero
     pairs_indexes = np.subtract(contacts[:, 0:2], 1)
 
     if np.shape(contacts)[1] > 2:
