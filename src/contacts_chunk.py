@@ -113,13 +113,13 @@ def main():
     pairs_indexes = np.subtract(contacts[:, 0:2], 1)
 
     if np.shape(contacts)[1] > 2:
-        print("File.cont file was given with Lennard-Jones coefficients and\
-         will be used to extract the initial distances")
+        print("File.cont file was given with Lennard-Jones coefficients and" +\
+              " it will be used to extract the initial distances")
         r_initial = evaluate_r_initial(contacts, model=str(sys.argv[1]))
     elif np.shape(contacts)[1] == 2:
-        print("File.cont file was given only with the list of atom pairs in\
-         contact. Distances will be determined by the structure file found at:\
-          " + str(pdb_file) + ".")
+        print("File.cont file was given only with the list of atom pairs in" +\
+         " contact. Distances will be determined by the structure file found at: "\
+           + str(pdb_file) + ".")
         r_initial = evaluate_r_from_pdb(pairs_indexes, pdb_file)
     else:
         print("File.cont file given has an issue and the code will not\
